@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <PublishSingleFile>true</PublishSingleFile>
+        <UseAppHost>true</UseAppHost>
+        <AssemblyName>Vyapari.Utils</AssemblyName>
+        <RootNamespace>Vyapari</RootNamespace>
+        <LangVersion>8.0</LangVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="Log.fs" />
+        <Compile Include="Utils.fs" />
+    </ItemGroup>
+
+</Project>

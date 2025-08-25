@@ -1,11 +1,11 @@
-namespace TradingLib
+namespace Vyapari.Core
 
 open System
+open Vyapari
 
 
 [<Struct>] type OptionType = Call | Put
     with override this.ToString() = match this with Call -> "Call" | Put -> "Put"
-
 
 type Ticker =
     | Stock of Symbol: string
@@ -15,12 +15,13 @@ type Ticker =
         override this.ToString() =
             match this with
             | Stock(symbol) ->
-                $"Symbol: {symbol}"
+                $"Type: Stock / Symbol: {symbol}"
             | Option(symbol, strike, expiry, direction) ->
-                let str = expiry.ToString("yyyy-MM-dd")
-                $"Symbol: {direction} {symbol} / Strike: {strike} / Expiry: {str}"
+                let exp = expiry.ToString("yyyy-MM-dd")
+                $"Type: Option / Direction: {direction.ToString()} / Symbol: " +
+                $"{symbol} / Strike: {strike} / Expiry: {exp}"
             | Crypto(symbol) ->
-                $"Symbol: {symbol}"
+                $"Type: Crypto / Symbol: {symbol}"
 
         member this.Symbol =
             match this with
@@ -29,6 +30,32 @@ type Ticker =
             | Crypto(symbol) -> symbol
 
 
+module Order =
+
+    [<Struct>]
+    type Entry (ticker: Ticker, quantity: uint, price: float,
+                profit: float, loss: float) =
+
+        member this.Ticker = ticker
+        member this.Quantity = quantity
+        member this.Price = assert (price > 0) ; Utils.Normalize(price)
+        member this.Profit = Utils.Normalize(profit)
+        member this.Loss = Utils.Normalize(loss)
+        member this.ProfitPercent() = (100.0 * (this.Profit - this.Price))/this.Price
+        member this.LossPercent() = (100.0 * (this.Price - this.Loss))/this.Price
+        with
+            override this.ToString() =
+                $"Order = {this.Ticker} -> Quantity: {this.Quantity} / Price: " +
+                $"{this.Price} / ProfitPrice: {this.Profit} / LossPrice: {this.Loss}"
+            static member compare (a: Maybe<Entry>) (b: Maybe<Entry>) =
+                match a, b with
+                | No, No -> No
+                | Yes(o), No -> Yes(o)
+                | No, Yes(o) -> Yes(o)
+                | Yes(o1), Yes(o2) ->
+                    Yes(if o1.ProfitPercent() > o2.ProfitPercent() then o1 else o2)
+
+(*
 [<Struct>] type AccountInfo = { Total: float ; Profit: float }
 
 
@@ -46,34 +73,10 @@ module Order =
         member this.ProfitPercent() = (100.0 * (this.Profit - this.Price))/this.Price
         member this.LossPercent() = (100.0 * (this.Price - this.Loss))/this.Price
         with override this.ToString() =
-                $"Ticker: {this.Ticker} / Quantity: {this.Quantity} / Price: " +
+                $"Order = {this.Ticker} -> Quantity: {this.Quantity} / Price: " +
                 $"{this.Price} / ProfitPrice: {this.Profit} / LossPrice: {this.Loss}"
 
     [<Struct>] type Status = Placed | Triggered | Executed | Cancelled
-
-
-[<Struct>] //TODO: This should be heap based, not struct
-type Bar (param: struct {| Open: float; High: float; Low: float
-                           Close: float; Time: time; Volume: int64 |}) =
-
-    member this.Open = assert (param.Low <= param.Open)
-                       assert (param.High >= param.Open)
-                       Utils.Normalize(param.Open)
-
-    member this.Close = assert (param.Low <= param.Close)
-                        assert (param.High >= param.Close)
-                        Utils.Normalize(param.Open)
-
-    member this.High = assert (param.Low <= param.High) ; Utils.Normalize(param.High)
-    member this.Low = assert (param.Low <= param.High) ; Utils.Normalize(param.Low)
-    member this.Epoch = param.Time
-    member this.Volume = param.Volume
-    member this.Timestamp = Utils.ToDateTime(param.Time)
-    member this.Price = Utils.Normalize((this.High + this.Low) / 2.0)
-    override this.ToString() =
-        let ts = Utils.Ascii <| this.Timestamp.ToString("F")
-        $"Open: {this.Open} / High: {this.High} / Close: {this.Close} / Low: " +
-        $"{this.Low} / Timestamp: {ts} / Epoch: {this.Epoch} / Volume: {this.Volume}"
 
 
 type Client<'T> =
@@ -81,6 +84,4 @@ type Client<'T> =
     abstract CancelOrder: 'T -> bool
     abstract OrderStatus: 'T -> Order.Status
     abstract PlaceOrder: Order.Entry -> 'T
-
-
-type Strategy = abstract Execute: Ticker * Vector<Bar> -> Maybe<Order.Entry>
+*)

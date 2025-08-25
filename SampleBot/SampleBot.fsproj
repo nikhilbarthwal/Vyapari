@@ -12,7 +12,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\TradingLib\TradingLib.fsproj" />
+		<ProjectReference Include="..\Core\Core.fsproj" />
 	</ItemGroup>
 
 </Project>

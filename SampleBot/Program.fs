@@ -2,9 +2,11 @@
 
 namespace SampleBot
 
-open TradingLib
+open Vyapari
+open Vyapari.Core
 open System
 
+(*
 type DoubleMovingAverage(short: int, long: int, quantity: uint) =
     do assert (long > short)
     member this.Size = long
@@ -52,3 +54,9 @@ module Program =
 
     [<EntryPoint>]
     let main _: int = if (let x = demo() in Execution.Run(x)) then 1 else 0
+*)
+
+module Program =
+
+    [<EntryPoint>]
+    let main _: int = printfn "Hello World!" ; 0
