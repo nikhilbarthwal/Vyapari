@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SampleBot", "SampleBot\SampleBot.fsproj", "{3C1553E3-360D-47F7-BB39-1640DEE52895}"
 EndProject
