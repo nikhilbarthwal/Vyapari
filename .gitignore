@@ -13,6 +13,7 @@ x64/
 # IDE files
 .vs/
 .idea/
+.code/
 
 
 # Other non-useful files
@@ -22,4 +23,5 @@ x64/
 *.pdf
 Temp/
 *.pkl
+*.class
 

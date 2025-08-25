@@ -1,0 +1,117 @@
+namespace Vyapari.Core
+
+open System.Net
+open System.Text.Json
+open System.Net.Http
+open Vyapari
+
+
+module Tradier =
+
+    type private Adapter(tag: string, dataStore: Data.Store<DataPoint>,
+                         token: string, reconnectAttemptMax: int, timeout: int) =
+
+
+        let wsUrl = "wss://ws.tradier.com/v1/markets/events"
+
+        let mutable reconnectAttempt = 1
+
+        let ticker2symbol (m: Map<string, Ticker>) (ticker: Ticker) =
+            match ticker with
+            | Stock(symbol) ->
+                m.Add(symbol, ticker)
+            | Crypto(symbol) ->
+                Log.Warning(tag, $"Crypto {symbol} not supported in {tag}") ; m
+            | Option(symbol, strike, expiry, ty) ->
+                let d = expiry.ToString("yyMMdd")
+                let p: int = int <| strike * 1000.0
+                let symbol = $"{symbol}{d}{ty.ToString().Substring(0, 1)}%08d{p}"
+                m.Add(symbol, ticker)
+
+        let tickers = dataStore.Tickers |> List.fold ticker2symbol Map.empty
+
+        let payload(): string =
+            try
+                let url = "https://api.tradier.com/v1/markets/events/session"
+                let tickers = "\"" + (tickers.Keys |> String.concat "\", \"") + "\""
+                Log.Info(tag, "Attempting to log into Tradier")
+                use client = new HttpClient()
+                let auth = Headers.AuthenticationHeaderValue("Bearer", token)
+                client.DefaultRequestHeaders.Authorization <- auth
+                let json = new StringContent("{}", System.Text.Encoding.UTF8)
+                let resp = client.PostAsync(url, json).GetAwaiter().GetResult()
+                let text = resp.Content.ReadAsStringAsync().GetAwaiter().GetResult()
+                if resp.StatusCode = HttpStatusCode.OK then
+                    let xmlDoc: System.Xml.XmlDocument  = System.Xml.XmlDocument()
+                    xmlDoc.LoadXml(text)
+                    let session = xmlDoc.FirstChild.ChildNodes[1].InnerText
+                    let currentTime = Utils.CurrentTime()
+                    Log.Info(tag, $"Starting session Id: {session} at {currentTime}")
+                    let msg = $"[{tickers}], \"sessionid\": \"{session}\" ,"
+                    "{\"symbols\": " + msg + "\"linebreak\": true}"
+                else Log.Error(tag, $"Failed to get Session Id, Response: {text}")
+            with
+            | ex -> Log.Exception(tag, "Failed to get Session Id", ex)
+
+        let receive: string -> unit = function
+            | "Initial" -> Log.Info(tag, "Initial message received")
+            | "NoMessageReceived" -> Log.Info(tag, "No message received")
+            | msg ->
+                try
+                    let json: JsonElement = JsonDocument.Parse(msg).RootElement
+                    if json.GetProperty("type").GetString() = "quote" then
+                        let timestamp = json.GetProperty("askdate").GetString()
+                        let epoch: time = System.Int64.Parse(timestamp) / 1000L
+                        let symbol = json.GetProperty("symbol").GetString()
+                        DataPoint(ask = json.GetProperty("ask").GetDouble(),
+                                  bid = json.GetProperty("bid").GetDouble(),
+                                  time = epoch,
+                                  volume = -1L)
+                        |> dataStore.Insert tickers[symbol]
+                with ex ->
+                    Log.Warning(tag,
+                        $"Unable to parse message {msg}, Exception: {ex.Message}")
+
+        let reconnect (msg: string, send: string -> bool): unit =
+            let suffix = $"for {wsUrl} with message: {msg}"
+            if msg = "Initial" then
+                Log.Info(tag, $"Initial connection {suffix}")
+            else
+                if reconnectAttempt > reconnectAttemptMax then
+                    Log.Warning(tag, $"Resetting connecting for {suffix}")
+                    (reconnectAttempt <- 1) ; (send (payload()) |> ignore)
+                else
+                    Log.Warning(tag,
+                                $"Reconnect attempt {reconnectAttempt} {suffix}")
+                    reconnectAttempt <- reconnectAttempt + 1
+
+        interface Socket.Adapter with
+            member this.Timeout: int = timeout
+            member this.Url = wsUrl
+            member this.Initialize(send) = payload() |> send |> ignore
+            member this.Receive(msg, _) = receive msg
+            member this.Reconnect(msg, _) = receive msg
+            member this.Tag: string = tag
+            member this.Close _ = ()
+
+    type Client(tickers: Ticker list,
+                length: int,
+                buffer: Buffer<DataPoint>,
+                verbose: bool,
+                reconnectAttempt: int,
+                token: string,
+                timeout: int) =
+
+            let tag = "Tradier"
+            let mutable alive = true
+            let dataStore = Data.Store(tickers, length, buffer, verbose)
+            let adapter = Adapter(tag, dataStore, token, reconnectAttempt, timeout)
+            let connection = new Socket.Connection(adapter)
+
+            interface Client<DataPoint> with
+                member this.DataSource: Data.Source<DataPoint> = dataStore
+                member this.IsAlive = alive
+                member this.AccountBalance() = 1000.0 // TODO: Fix this!
+                member this.Dispose() =
+                    alive <- false
+                    let x: System.IDisposable = connection in x.Dispose()

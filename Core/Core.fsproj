@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <AssemblyName>Vyapari.Core</AssemblyName>
+        <RootNamespace>Vyapari.Core</RootNamespace>
+        <LangVersion>8.0</LangVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="Definitions.fs" />
+        <Compile Include="Data.fs" />
+        <Compile Include="Buffer.fs" />
+        <Compile Include="DataPoint.fs" />
+        <!-- Compile Include="DataBar.fs" / -->
+        <Compile Include="Sockets.fs" />
+        <Compile Include="Execution.fs" />
+        <Compile Include="Gemini.fs" />
+        <Compile Include="Tradier.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Utils\Utils.fsproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Websocket.Client" Version="5.1.2" />
+    </ItemGroup>
+
+</Project>
