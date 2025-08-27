@@ -17,9 +17,9 @@ type Ticker =
             | Stock(symbol) ->
                 $"Type: Stock / Symbol: {symbol}"
             | Option(symbol, strike, expiry, direction) ->
-                let exp = expiry.ToString("yyyy-MM-dd")
+                let expiryStr = expiry.ToString("yyyy-MM-dd")
                 $"Type: Option / Direction: {direction.ToString()} / Symbol: " +
-                $"{symbol} / Strike: {strike} / Expiry: {exp}"
+                $"{symbol} / Strike: {strike} / Expiry: {expiryStr}"
             | Crypto(symbol) ->
                 $"Type: Crypto / Symbol: {symbol}"
 
@@ -30,128 +30,16 @@ type Ticker =
             | Crypto(symbol) -> symbol
 
 
-module Order =
-
-    [<Struct>] // TODO: Should not be Struct but reference type
-    type Entry (ticker: Ticker, quantity: uint, price: float,
-                profit: float, loss: float) =
-
-        member this.Ticker = ticker
-        member this.Quantity = quantity
-        member this.Price = assert (price > 0) ; Utils.Normalize(price)
-        member this.Profit = Utils.Normalize(profit)
-        member this.Loss = Utils.Normalize(loss)
-        member this.ProfitPercent() = (100.0 * (this.Profit - this.Price))/this.Price
-        member this.LossPercent() = (100.0 * (this.Price - this.Loss))/this.Price
-        with
-            override this.ToString() =
-                $"Order = {this.Ticker} -> Quantity: {this.Quantity} / Price: " +
-                $"{this.Price} / ProfitPrice: {this.Profit} / LossPrice: {this.Loss}"
-            static member Compare (a: Maybe<Entry>) (b: Maybe<Entry>) =
-                match a, b with
-                | No, No -> No
-                | Yes(o), No -> Yes(o)
-                | No, Yes(o) -> Yes(o)
-                | Yes(o1), Yes(o2) ->
-                    Yes(if o1.ProfitPercent() > o2.ProfitPercent() then o1 else o2)
-
-(*
-[<Struct>] type AccountInfo = { Total: float ; Profit: float }
-
-
-module Order =
-
-    [<Struct>]
-    type Entry (param: struct {| Ticker: Ticker; Quantity: uint; Price: float
-                                 Profit: float; Loss: float |}) =
-
-        member this.Ticker = param.Ticker
-        member this.Quantity: int = int param.Quantity
-        member this.Price = assert (param.Price > 0) ; Utils.Normalize(param.Price)
-        member this.Profit = Utils.Normalize(param.Profit)
-        member this.Loss = Utils.Normalize(param.Loss)
-        member this.ProfitPercent() = (100.0 * (this.Profit - this.Price))/this.Price
-        member this.LossPercent() = (100.0 * (this.Price - this.Loss))/this.Price
-        with override this.ToString() =
-                $"Order = {this.Ticker} -> Quantity: {this.Quantity} / Price: " +
-                $"{this.Price} / ProfitPrice: {this.Profit} / LossPrice: {this.Loss}"
-
-    [<Struct>] type Status = Placed | Triggered | Executed | Cancelled
-
-
-type Client<'T> =
-    abstract AccountInfo: unit -> AccountInfo
-    abstract CancelOrder: 'T -> bool
-    abstract OrderStatus: 'T -> Order.Status
-    abstract PlaceOrder: Order.Entry -> 'T
-*)
-
-
 [<Struct>]
-type Shape =
-    | Circle of radius: float
-    | Rectangle of width: float * height: float
-    | Square of side: float
-    
-    // Instance members
-    member this.Area() =
+type Order =
+    | Null
+    | OTOCO of ticker: Ticker * quantity: int * price: float *
+                       profit: float * loss: float
+    with
+    override this.ToString() =
         match this with
-        | Circle r -> System.Math.PI * r * r
-        | Rectangle (w, h) -> w * h
-        | Square s -> s * s
-    
-    member this.Perimeter() =
-        match this with
-        | Circle r -> 2.0 * System.Math.PI * r
-        | Rectangle (w, h) -> 2.0 * (w + h)
-        | Square s -> 4.0 * s
-    
-    member this.Description =
-        match this with
-        | Circle r -> sprintf "Circle with radius %.2f" r
-        | Rectangle (w, h) -> sprintf "Rectangle %.2f x %.2f" w h
-        | Square s -> sprintf "Square with side %.2f" s
-    
-    // Method with parameters
-    member this.Scale(factor: float) =
-        match this with
-        | Circle r -> Circle (r * factor)
-        | Rectangle (w, h) -> Rectangle (w * factor, h * factor)
-        | Square s -> Square (s * factor)
-    
-    // Static member
-    static member CreateUnitSquare() = Square 1.0
-
-type Priority =
-    | Low
-    | Medium
-    | High
-    | Critical
-    
-    // Overload the > operator
-    static member op_GreaterThan(left: Priority, right: Priority) =
-        let priorityValue = function
-            | Low -> 1
-            | Medium -> 2
-            | High -> 3
-            | Critical -> 4
-        
-        priorityValue left > priorityValue right
-    
-    // Overload the < operator
-    static member op_LessThan(left: Priority, right: Priority) =
-        let priorityValue = function
-            | Low -> 1
-            | Medium -> 2
-            | High -> 3
-            | Critical -> 4
-        
-        priorityValue left < priorityValue right
-    
-    // Overload the >= operator
-    static member op_GreaterEqualThan(left: Priority, right: Priority) =
-        left > right || left = right
-    
-    // Overload the <= operator
-    static member (<=) (left: Priority, right: Priority) =
-        left < right || left = right
+        | Null ->
+            "Null"
+        | OTOCO(ticker, quantity, price, profit, loss) ->
+            $"Order -> Ticker: {ticker} / Quantity: {quantity} / Price: " +
+            $"{price} / ProfitPrice: {profit} / LossPrice: {loss}"
