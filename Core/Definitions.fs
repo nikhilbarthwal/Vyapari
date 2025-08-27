@@ -85,3 +85,73 @@ type Client<'T> =
     abstract OrderStatus: 'T -> Order.Status
     abstract PlaceOrder: Order.Entry -> 'T
 *)
+
+
+[<Struct>]
+type Shape =
+    | Circle of radius: float
+    | Rectangle of width: float * height: float
+    | Square of side: float
+    
+    // Instance members
+    member this.Area() =
+        match this with
+        | Circle r -> System.Math.PI * r * r
+        | Rectangle (w, h) -> w * h
+        | Square s -> s * s
+    
+    member this.Perimeter() =
+        match this with
+        | Circle r -> 2.0 * System.Math.PI * r
+        | Rectangle (w, h) -> 2.0 * (w + h)
+        | Square s -> 4.0 * s
+    
+    member this.Description =
+        match this with
+        | Circle r -> sprintf "Circle with radius %.2f" r
+        | Rectangle (w, h) -> sprintf "Rectangle %.2f x %.2f" w h
+        | Square s -> sprintf "Square with side %.2f" s
+    
+    // Method with parameters
+    member this.Scale(factor: float) =
+        match this with
+        | Circle r -> Circle (r * factor)
+        | Rectangle (w, h) -> Rectangle (w * factor, h * factor)
+        | Square s -> Square (s * factor)
+    
+    // Static member
+    static member CreateUnitSquare() = Square 1.0
+
+type Priority =
+    | Low
+    | Medium
+    | High
+    | Critical
+    
+    // Overload the > operator
+    static member op_GreaterThan(left: Priority, right: Priority) =
+        let priorityValue = function
+            | Low -> 1
+            | Medium -> 2
+            | High -> 3
+            | Critical -> 4
+        
+        priorityValue left > priorityValue right
+    
+    // Overload the < operator
+    static member op_LessThan(left: Priority, right: Priority) =
+        let priorityValue = function
+            | Low -> 1
+            | Medium -> 2
+            | High -> 3
+            | Critical -> 4
+        
+        priorityValue left < priorityValue right
+    
+    // Overload the >= operator
+    static member op_GreaterEqualThan(left: Priority, right: Priority) =
+        left > right || left = right
+    
+    // Overload the <= operator
+    static member (<=) (left: Priority, right: Priority) =
+        left < right || left = right
