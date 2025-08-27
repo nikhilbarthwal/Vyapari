@@ -32,7 +32,7 @@ type Ticker =
 
 module Order =
 
-    [<Struct>]
+    [<Struct>] // TODO: Should not be Struct but reference type
     type Entry (ticker: Ticker, quantity: uint, price: float,
                 profit: float, loss: float) =
 
@@ -47,7 +47,7 @@ module Order =
             override this.ToString() =
                 $"Order = {this.Ticker} -> Quantity: {this.Quantity} / Price: " +
                 $"{this.Price} / ProfitPrice: {this.Profit} / LossPrice: {this.Loss}"
-            static member compare (a: Maybe<Entry>) (b: Maybe<Entry>) =
+            static member Compare (a: Maybe<Entry>) (b: Maybe<Entry>) =
                 match a, b with
                 | No, No -> No
                 | Yes(o), No -> Yes(o)
