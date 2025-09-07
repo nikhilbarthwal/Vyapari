@@ -74,16 +74,19 @@ module Gemini =
                     Timeout: int) =
 
         let data = Data.Store(tickers, length, buffer, verbose)
-        let connection (ticker: Ticker): Maybe<Socket.Connection> =
+
+        let parser (ticker: Ticker): Parser option =
             match ticker with
             | Crypto(symbol) when (symbol = "BTC" || symbol = "ETH") ->
-                Yes <| new Socket.Connection(
-                    Parser(symbol, AskBidDifference, Timeout, data.Insert ticker))
-            | x -> Log.Warning("Gemini", $"Gemini does not support {x}") ; No
+                Some <| Parser(symbol, AskBidDifference, Timeout, data.Insert ticker)
+            | x ->
+                Log.Warning("Gemini", $"Gemini does not support {x}") ; None
 
-        let connections = Utils.CreateDictionaryOpt(tickers, connection)
+        let connection parser: System.IDisposable = new Socket.Connection(parser)
+        let parsers = List.choose parser tickers
+        let connections = Utils.CreateDictionary(parsers, connection)
+
         member this.DataSource: Data.Source<DataPoint> = data
+
         interface System.IDisposable with
-            member this.Dispose() =
-                for conn in connections.Values do
-                    let x: System.IDisposable = conn in x.Dispose()
+            member this.Dispose() = for c in connections.Values do c.Dispose()

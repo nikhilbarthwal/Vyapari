@@ -16,12 +16,6 @@ module Utils =
         let data = System.Collections.Generic.Dictionary<'K, 'V>(l.Length)
         (for x in l do data.Add(x, f x)) ; data.ToImmutableDictionary()
 
-    let CreateDictionaryOpt<'V, 'K when 'K: equality>(l: 'K list,
-                                                      f: 'K -> Maybe<'V>) =
-        let data = System.Collections.Generic.Dictionary<'K, 'V>(l.Length)
-        for k in l do (match (f k) with Yes(x) -> data.Add(k, x) | _ -> ())
-        data.ToImmutableDictionary()
-
     let inline Normalize(x: float) = Math.Round(x, 3)
 
     let BisectFloat (r1: int) (r2: int) (v1: float) (v2: float): float =
@@ -42,11 +36,11 @@ module Utils =
     let inline Wait (timeout: int) =
         assert (timeout > 0) ; Threading.Thread.Sleep(timeout * 1000)
 
-    let inline Diff (a: float, b: float) = Normalize(100.0 * (a-b) / b)
+    let inline Diff (a: float, b: float) = Normalize(100.0 * (a - b) / b)
 
     let inline CurrentTime() = DateTime.Now.ToString("F")
 
-    let inline Max (f1:float) (f2: float) = if f1 > f2 then f1 else f2
+    let inline Max (f1:float) (f2: float): float = if f1 > f2 then f1 else f2
 
 
 module Loop =

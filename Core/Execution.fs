@@ -3,7 +3,7 @@ namespace  Vyapari.Core
 open Vyapari
 
 
-type Strategy = abstract Eval: float -> Maybe<Order.Entry>
+type Strategy = abstract Eval: float -> Order
 
 
 type Client<'T when 'T :> Data<'T>> =
