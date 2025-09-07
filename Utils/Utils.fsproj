@@ -12,6 +12,7 @@
     <ItemGroup>
         <Compile Include="Log.fs" />
         <Compile Include="Utils.fs" />
+        <Compile Include="Array.fs" />
     </ItemGroup>
 
 </Project>
