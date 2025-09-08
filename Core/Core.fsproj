@@ -5,6 +5,7 @@
         <AssemblyName>Vyapari.Core</AssemblyName>
         <RootNamespace>Vyapari.Core</RootNamespace>
         <LangVersion>8.0</LangVersion>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     </PropertyGroup>
 
     <ItemGroup>

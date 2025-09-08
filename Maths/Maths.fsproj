@@ -7,6 +7,7 @@
 		<AssemblyName>Vyapari.Maths</AssemblyName>
 		<RootNamespace>Vyapari.Maths</RootNamespace>
 		<LangVersion>8.0</LangVersion>
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 	</PropertyGroup>
 
 	<ItemGroup>
