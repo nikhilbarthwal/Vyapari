@@ -39,8 +39,8 @@ type Session<'T when 'T :> Data<'T>>(strategyGen: Data.Source<'T> -> Strategy,
 
         while (continueExecutionLoop <| client.AccountBalance()) do
             match strategy.Eval(initialCapital) with
-            | Yes(order) -> Log.Info("Order", $"Placed -> {order}") ; Utils.Wait(5)
-            | No -> Utils.Wait(1)
+            | Order.Null -> Utils.Wait(1)
+            | order -> Log.Info("Order", $"Placed -> {order}") ; Utils.Wait(5)
 
         let time = Utils.CurrentTime()
         let balance = client.AccountBalance()
