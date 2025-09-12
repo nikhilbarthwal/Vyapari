@@ -1,7 +1,4 @@
-namespace Vyapari.Core
-
-open Vyapari
-open Websocket.Client
+namespace Vyapari
 
 
 module Socket =
@@ -20,7 +17,7 @@ module Socket =
 
         let client, reconnect, receive, task =
             try
-                let cl = new WebsocketClient(System.Uri(z.Url))
+                let cl = new Websocket.Client.WebsocketClient(System.Uri(z.Url))
                 cl.ReconnectTimeout <- System.TimeSpan.FromSeconds(z.Timeout)
 
                 let rc = System.ObservableExtensions.Subscribe(

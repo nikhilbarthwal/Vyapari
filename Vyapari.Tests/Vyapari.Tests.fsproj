@@ -25,8 +25,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Core\Core.fsproj" />
-      <ProjectReference Include="..\Utils\Utils.fsproj" />
+      <ProjectReference Include="..\Vyapari\Vyapari.fsproj" />
     </ItemGroup>
 
 </Project>

@@ -1,6 +1,4 @@
-namespace Vyapari.Core
-
-open Vyapari
+namespace Vyapari
 
 
 [<Struct>]

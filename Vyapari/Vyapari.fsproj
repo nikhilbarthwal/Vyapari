@@ -9,6 +9,9 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <Compile Include="Utils.fs" />
+        <Compile Include="Log.fs" />
+        <Compile Include="Array.fs" />
         <Compile Include="Definitions.fs" />
         <Compile Include="Data.fs" />
         <Compile Include="Buffer.fs" />
@@ -18,10 +21,6 @@
         <Compile Include="Execution.fs" />
         <Compile Include="Gemini.fs" />
         <Compile Include="Tradier.fs" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\Utils\Utils.fsproj" />
     </ItemGroup>
 
     <ItemGroup>

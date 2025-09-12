@@ -1,7 +1,6 @@
-namespace Vyapari.Core
+namespace Vyapari
 
 open System
-open Vyapari
 
 
 [<Struct>] type OptionType = Call | Put

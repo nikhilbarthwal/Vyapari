@@ -1,8 +1,7 @@
-namespace Vyapari.Core
+namespace Vyapari
 
-open Vyapari
+
 open System.Text.Json
-
 
 module Gemini =
 

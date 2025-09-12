@@ -1,4 +1,4 @@
-namespace Vyapari.Core
+namespace Vyapari
 
 open Vyapari
 

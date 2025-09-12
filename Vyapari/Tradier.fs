@@ -1,10 +1,9 @@
-namespace Vyapari.Core
+namespace Vyapari
+
 
 open System.Net
 open System.Text.Json
 open System.Net.Http
-open Vyapari
-
 
 module Tradier =
 

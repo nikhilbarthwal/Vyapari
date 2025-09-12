@@ -1,17 +1,12 @@
-
 Microsoft Visual Studio Solution File, Format Version 12.00
+
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SampleBot", "SampleBot\SampleBot.fsproj", "{3C1553E3-360D-47F7-BB39-1640DEE52895}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Core", "Core\Core.fsproj", "{CCBBB491-0833-446A-AC2E-1E4A324D8792}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Vyapari", "Vyapari\Vyapari.fsproj", "{CCBBB491-0833-446A-AC2E-1E4A324D8792}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Core.Tests", "Core.Tests\Core.Tests.fsproj", "{7E945D2D-56FE-4B97-A8D1-A7DBAD38FF03}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Vyapari.Tests", "Vyapari.Tests\Vyapari.Tests.fsproj", "{7E945D2D-56FE-4B97-A8D1-A7DBAD38FF03}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Maths", "Maths\Maths.fsproj", "{221C981A-B963-4958-878F-D344747CF268}"
-EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Maths.Tests", "Maths.Tests\Maths.Tests.fsproj", "{07F51C3E-4471-4962-BD16-BE2BA90372DF}"
-EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Utils", "Utils\Utils.fsproj", "{EA10CD34-1AC0-48CA-808E-CD22BFFE922D}"
-EndProject
+
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,17 +25,5 @@ Global
 		{7E945D2D-56FE-4B97-A8D1-A7DBAD38FF03}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7E945D2D-56FE-4B97-A8D1-A7DBAD38FF03}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7E945D2D-56FE-4B97-A8D1-A7DBAD38FF03}.Release|Any CPU.Build.0 = Release|Any CPU
-		{221C981A-B963-4958-878F-D344747CF268}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{221C981A-B963-4958-878F-D344747CF268}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{221C981A-B963-4958-878F-D344747CF268}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{221C981A-B963-4958-878F-D344747CF268}.Release|Any CPU.Build.0 = Release|Any CPU
-		{07F51C3E-4471-4962-BD16-BE2BA90372DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{07F51C3E-4471-4962-BD16-BE2BA90372DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{07F51C3E-4471-4962-BD16-BE2BA90372DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{07F51C3E-4471-4962-BD16-BE2BA90372DF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{EA10CD34-1AC0-48CA-808E-CD22BFFE922D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{EA10CD34-1AC0-48CA-808E-CD22BFFE922D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{EA10CD34-1AC0-48CA-808E-CD22BFFE922D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{EA10CD34-1AC0-48CA-808E-CD22BFFE922D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

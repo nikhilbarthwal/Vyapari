@@ -1,7 +1,7 @@
 namespace Vyapari
 
-open System.Diagnostics
 
+open System.Diagnostics
 
 module Log =
 

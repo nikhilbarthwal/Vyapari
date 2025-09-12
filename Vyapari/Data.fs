@@ -1,6 +1,5 @@
-namespace Vyapari.Core
+namespace Vyapari
 
-open Vyapari
 
 type Data<'T when 'T :> Data<'T>> = abstract member Price: float
                                     abstract member Time: time

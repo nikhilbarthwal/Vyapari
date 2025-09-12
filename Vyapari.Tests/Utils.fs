@@ -1,7 +1,6 @@
-namespace Vyapari.Core.Tests
+namespace Vyapari.Tests
 
 open Vyapari
-open Vyapari.Core
 
 
 module Utils =

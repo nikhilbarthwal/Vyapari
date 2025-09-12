@@ -1,8 +1,7 @@
-namespace Vyapari.Core.Tests
+namespace Vyapari.Tests
 
 open NUnit.Framework
 open Vyapari
-open Vyapari.Core
 
 
 module Buffer =

@@ -3,7 +3,6 @@
 namespace SampleBot
 
 open Vyapari
-open Vyapari.Core
 open System
 
 (*
