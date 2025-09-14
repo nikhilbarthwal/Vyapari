@@ -13,12 +13,18 @@ and Buffer<'T when 'T :> Data<'T>> =
 
 module Data =
 
-    type StoreArray<'T when 'T :> Data<'T>> = abstract Get: Array.Buffer<'T> -> bool
+    type Price<'T when 'T :> Data<'T>> internal(length: int, f: unit -> 'T) =
+        let data = Array.Buffer(length, fun _ -> f())
+        member internal this.Update(get: int -> 'T) () = data.Overwrite(get)
+        member this.Data: Array<'T> = data
 
-    type private StoreArrayBuffer<'T when 'T :> Data<'T>>(ticker: Ticker,
-                                                          length: int,
-                                                          buffer: Buffer<'T>,
-                                                          verbose: bool) =
+    type Array<'T when 'T :> Data<'T>> = abstract Get: Price<'T> -> bool
+
+
+    type private ArrayBuffer<'T when 'T :> Data<'T>>(ticker: Ticker,
+                                                     length: int,
+                                                     buffer: Buffer<'T>,
+                                                     verbose: bool) =
         let mutable pos: int = 0
         let mutable count: int = 0
 
@@ -31,30 +37,28 @@ module Data =
 
         let reset() = count <- 0 ; pos <- 0
 
-        let update (input: Array.Buffer<'T>) () = input.Overwrite(get)
-
         let ingest x =
             if verbose then Log.Info("Data", $"Price for {ticker} -> {x}")
             lock object (insert x)
 
         let queue = buffer.BufferQueue(ingest)
 
-        member this.Reset() =
+        member internal this.Reset() =
             if verbose then Log.Info("Data", $"Reset for {ticker}")
             lock object reset
 
-        member this.Insert(x: 'T) =
+        member internal this.Insert(x: 'T) =
             if (not <| queue.Ingest(x)) then this.Reset()
 
-        interface StoreArray<'T> with
-            member this.Get(input: Array.Buffer<'T>): bool =
-                if count < length then false else
-                    lock object (update input) ; true
+        interface Array<'T> with
+            member this.Get(prices: Price<'T>): bool =
+                if count < length then false
+                    else lock object (prices.Update get) ; true
 
 
     type Source<'T when 'T :> Data<'T>> =
         abstract Tickers: Ticker list
-        abstract Item: Ticker -> StoreArray<'T> with get
+        abstract Item: Ticker -> Array<'T> with get
         abstract BufferLength: int
 
 
@@ -62,11 +66,11 @@ module Data =
                                        length: int,
                                        buffer: Buffer<'T>,
                                        verbose: bool) =
-        let store ticker = StoreArrayBuffer(ticker, length, buffer, verbose)
+        let store ticker = ArrayBuffer(ticker, length, buffer, verbose)
         let dataMap = Utils.CreateDictionary(tickers, store)
         member this.Tickers: Ticker list = tickers
-        member this.Reset(ticker: Ticker) = dataMap[ticker].Reset()
-        member this.Insert (ticker: Ticker) (data: 'T) = dataMap[ticker].Insert(data)
+        member this.Reset ticker = dataMap[ticker].Reset()
+        member this.Insert ticker data = dataMap[ticker].Insert(data)
 
         interface Source<'T> with
             member this.Tickers: Ticker list = tickers

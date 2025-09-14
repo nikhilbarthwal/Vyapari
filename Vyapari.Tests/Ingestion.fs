@@ -37,9 +37,9 @@ module Ingestion =
                 let m = $"Diff = {diff} <> interval = {interval} at {i} for {ticker}"
                 Log.Warning(tag,  m) ; false
 
-        let data = Array.Buffer(length, fun _ -> DataPoint.Init())
-        if source[ticker].Get(data) then
-            if (Loop.Verify (check data) 1 length) then
+        let prices = DataPoint.Prices(length)
+        if source[ticker].Get(prices) then
+            if (Loop.Verify (check prices.Data) 1 length) then
                 Log.Info(tag, $"Ingestion successfully passed for {ticker}") ; true
             else
                 Log.Info(tag, $"Ingestion failed for {ticker}") ; false

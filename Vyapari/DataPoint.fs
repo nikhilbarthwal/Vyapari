@@ -22,6 +22,7 @@ type DataPoint (ask: float, bid: float, time: time, volume: int64) =
 module DataPoint =
 
     let Init() = DataPoint (0.0, 0.0, 0L, 0L)
+    let Prices(length: int) = Data.Price<DataPoint>(length, Init)
 
     let private merge (count: int) (data: DataPoint) (x: DataPoint) =
         let avgFloat = Utils.BisectFloat count 1
