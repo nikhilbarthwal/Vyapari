@@ -14,3 +14,7 @@ module Utils =
                   bid = 1.0 + random.NextDouble(),
                   time = t,
                   volume = 0)
+
+    let Gen (length: int) (min: int, max: int): Array<int> =
+        let random = System.Random(System.Guid.NewGuid().GetHashCode())
+        Array.Initialize(length, fun _ -> random.Next(min, max))

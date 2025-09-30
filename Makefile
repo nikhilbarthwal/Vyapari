@@ -38,5 +38,8 @@ print.ps: ${sources}
 print.pdf: print.ps
 	ps2pdf -o $@ $^
 
+test: $(sources)
+	dotnet test Vyapari.Tests/Vyapari.Tests.fsproj
+
 clean:
 	rm -rf */bin */obj *.bin *.exe *.log print.pdf print.ps
