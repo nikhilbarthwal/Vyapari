@@ -5,8 +5,8 @@
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
         <OutputType>Library</OutputType>
-        <AssemblyName>Vyapari.Core.Tests</AssemblyName>
-        <RootNamespace>Vyapari.Core.Tests</RootNamespace>
+        <AssemblyName>Vyapari.Tests</AssemblyName>
+        <RootNamespace>Vyapari.Tests</RootNamespace>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     </PropertyGroup>
 
