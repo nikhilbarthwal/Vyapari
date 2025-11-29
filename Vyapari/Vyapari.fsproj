@@ -1,10 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
+        <IsTestProject>false</IsTestProject>
+        <OutputType>Library</OutputType>
         <AssemblyName>Vyapari.Core</AssemblyName>
         <RootNamespace>Vyapari.Core</RootNamespace>
-        <LangVersion>8.0</LangVersion>
+        <LangVersion>10.0</LangVersion>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     </PropertyGroup>
 

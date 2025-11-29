@@ -116,4 +116,4 @@ module Buffer =
 
 
     [<Test>]
-    let Buffer() = Assert.True(verify <| genBars)
+    let Buffer() = Assert.That(verify <| genBars)

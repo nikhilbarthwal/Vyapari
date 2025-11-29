@@ -1,5 +1,7 @@
 namespace Vyapari
 
+open System
+
 
 module Socket =
 
@@ -17,14 +19,14 @@ module Socket =
 
         let client, reconnect, receive, task =
             try
-                let cl = new Websocket.Client.WebsocketClient(System.Uri(z.Url))
-                cl.ReconnectTimeout <- System.TimeSpan.FromSeconds(z.Timeout)
+                let cl = new Websocket.Client.WebsocketClient(Uri(z.Url))
+                cl.ReconnectTimeout <- TimeSpan.FromSeconds(int64 <| z.Timeout)
 
-                let rc = System.ObservableExtensions.Subscribe(
+                let rc = ObservableExtensions.Subscribe(
                              cl.ReconnectionHappened,
                              fun info -> z.Reconnect(info.Type.ToString(), cl.Send))
 
-                let rv = System.ObservableExtensions.Subscribe(
+                let rv = ObservableExtensions.Subscribe(
                              cl.MessageReceived,
                              fun msg -> z.Receive(msg.Text, cl.Send))
 
@@ -37,7 +39,7 @@ module Socket =
 
         member this.Send(msg: string) = client.Send msg
 
-        interface System.IDisposable with
+        interface IDisposable with
             member this.Dispose() =
                 z.Close(client.Send)
                 receive.Dispose() ; reconnect.Dispose() ; client.Dispose()

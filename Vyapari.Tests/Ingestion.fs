@@ -53,4 +53,4 @@ module Ingestion =
         let store = Data.Store(tickers, size, buffer, false)
         for ticker, bar in genDataPoints(tickers, interval, size) do
             store.Insert ticker bar
-        Assert.True(Utils.Test (verify store tag interval size) tickers)
+        Assert.That(Utils.Test (verify store tag interval size) tickers)

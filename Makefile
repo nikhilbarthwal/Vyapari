@@ -39,7 +39,7 @@ print.pdf: print.ps
 	ps2pdf -o $@ $^
 
 test: $(sources)
-	dotnet test Vyapari.Tests/Vyapari.Tests.fsproj
+	dotnet test Vyapari.Tests/Vyapari.Tests.fsproj -- NUnit.ConsoleOut=0
 
 clean:
 	rm -rf */bin */obj *.bin *.exe *.log print.pdf print.ps
