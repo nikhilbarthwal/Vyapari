@@ -7,13 +7,10 @@ open System.Net.Http
 
 module Tradier =
 
-    type private Adapter(tag: string, dataStore: Data.Store<DataPoint>,
-                         token: string, reconnectAttemptMax: int, timeout: int) =
+    type private Adapter(tag: string, store: Data.Store<DataPoint>, token: string) =
 
 
         let wsUrl = "wss://ws.tradier.com/v1/markets/events"
-
-        let mutable reconnectAttempt = 1
 
         let ticker2symbol (m: Map<string, Ticker>) (ticker: Ticker) =
             match ticker with
@@ -27,7 +24,7 @@ module Tradier =
                 let symbol = $"{symbol}{d}{ty.ToString().Substring(0, 1)}%08d{p}"
                 m.Add(symbol, ticker)
 
-        let tickers = dataStore.Tickers |> List.fold ticker2symbol Map.empty
+        let tickers = store.Tickers |> List.fold ticker2symbol Map.empty
 
         let payload(): string =
             try
@@ -52,7 +49,7 @@ module Tradier =
             with
             | ex -> Log.Exception(tag, "Failed to get Session Id", ex)
 
-        let receive: string -> unit = function
+        let receiver: string -> unit = function
             | "Initial" -> Log.Info(tag, "Initial message received")
             | "NoMessageReceived" -> Log.Info(tag, "No message received")
             | msg ->
@@ -66,30 +63,15 @@ module Tradier =
                                   bid = json.GetProperty("bid").GetDouble(),
                                   time = epoch,
                                   volume = -1L)
-                        |> dataStore.Insert tickers[symbol]
+                        |> store.Insert tickers[symbol]
                 with ex ->
                     Log.Warning(tag,
                         $"Unable to parse message {msg}, Exception: {ex.Message}")
 
-        let reconnect (msg: string, send: string -> bool): unit =
-            let suffix = $"for {wsUrl} with message: {msg}"
-            if msg = "Initial" then
-                Log.Info(tag, $"Initial connection {suffix}")
-            else
-                if reconnectAttempt > reconnectAttemptMax then
-                    Log.Warning(tag, $"Resetting connecting for {suffix}")
-                    (reconnectAttempt <- 1) ; (send (payload()) |> ignore)
-                else
-                    Log.Warning(tag,
-                                $"Reconnect attempt {reconnectAttempt} {suffix}")
-                    reconnectAttempt <- reconnectAttempt + 1
-
         interface Socket.Adapter with
-            member this.Timeout: int = timeout
             member this.Url = wsUrl
-            member this.Initialize(send) = payload() |> send |> ignore
-            member this.Receive(msg, _) = receive msg
-            member this.Reconnect(msg, _) = receive msg
+            member this.Initialize(send) = payload() |> send
+            member this.Receiver(msg, _) = receiver msg
             member this.Tag: string = tag
             member this.Close _ = ()
 
@@ -97,14 +79,12 @@ module Tradier =
                 length: int,
                 buffer: Buffer<DataPoint>,
                 verbose: bool,
-                reconnectAttempt: int,
-                token: string,
-                timeout: int) =
+                token: string) =
 
             let tag = "Tradier"
             let mutable alive = true
             let dataStore = Data.Store(tickers, length, buffer, verbose)
-            let adapter = Adapter(tag, dataStore, token, reconnectAttempt, timeout)
+            let adapter = Adapter(tag, dataStore, token)
             let connection = new Socket.Connection(adapter)
 
             interface Client<DataPoint> with

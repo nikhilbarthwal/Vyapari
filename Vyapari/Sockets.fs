@@ -1,50 +1,70 @@
 namespace Vyapari
 
 open System
+open System.Net.WebSockets
+open System.Threading
+open System.Text
 
 
 module Socket =
 
     type Adapter =
-        abstract Timeout: int
         abstract Url: string
-        abstract Initialize: (string -> bool) -> unit
-        abstract Receive: string * (string -> bool) -> unit
-        abstract Reconnect: string * (string -> bool) -> unit
+        abstract Initialize: (string -> unit) -> unit
+        abstract Receiver: string * (string -> unit) -> unit
         abstract Tag: string
-        abstract Close: (string -> bool) -> unit
-
+        abstract Close: (string -> unit) -> unit
 
     type Connection(z: Adapter) =
 
-        let client, reconnect, receive, task =
+        let send (cl: ClientWebSocket) (message: string) =
+            if (cl.State = WebSocketState.Open) then
+                let bytes = Encoding.UTF8.GetBytes(message);
+                let buffer = ArraySegment<byte>(bytes);
+                cl.SendAsync(buffer, WebSocketMessageType.Text, true,
+                             CancellationToken.None).Wait()
+                Log.Info(z.Tag, $"Sent: {message}")
+            else Log.Info(z.Tag, "Connection is not open.")
+
+        let receiver (cl: ClientWebSocket) =
+            let buffer: byte[] = Array.zeroCreate 8192
+            let mutable b = true
             try
-                let cl = new Websocket.Client.WebsocketClient(Uri(z.Url))
-                cl.ReconnectTimeout <- TimeSpan.FromSeconds(int64 <| z.Timeout)
+                while b && (cl.State = WebSocketState.Open) do
+                    let result = cl.ReceiveAsync(ArraySegment<byte>(buffer),
+                                                     CancellationToken.None).Result
+                    if (result.MessageType = WebSocketMessageType.Close) then
+                        Log.Info(z.Tag, "\nServer initiated close.")
+                        b <- false
+                    else
+                        if (result.MessageType = WebSocketMessageType.Text) then
+                            let msg = Encoding.UTF8.GetString(buffer,0, result.Count)
+                            z.Receiver(msg, send cl)
+                with ex -> Log.Info(z.Tag, $"Error: {ex.Message}")
 
-                let rc = ObservableExtensions.Subscribe(
-                             cl.ReconnectionHappened,
-                             fun info -> z.Reconnect(info.Type.ToString(), cl.Send))
-
-                let rv = ObservableExtensions.Subscribe(
-                             cl.MessageReceived,
-                             fun msg -> z.Receive(msg.Text, cl.Send))
-
-                let tsk = cl.Start()
-                z.Initialize(cl.Send)
-                (cl, rc, rv, tsk)
-
+        let client, receiver =
+            try
+                use cl = new ClientWebSocket()
+                Log.Info(z.Tag, $"Connecting to {z.Url}...")
+                cl.ConnectAsync(Uri(z.Url), CancellationToken.None).Wait()
+                Log.Info(z.Tag, "Connected!")
+                let rc = Thread(fun () -> receiver cl)
+                rc.Start()
+                z.Initialize(send cl)
+                (cl, rc)
             with ex ->
                 Log.Exception(z.Tag, $"Exception in {z.Url} socket connection", ex)
 
-        member this.Send(msg: string) = client.Send msg
+        member this.Send(msg: string) = send client msg
 
-        interface IDisposable with
-            member this.Dispose() =
-                z.Close(client.Send)
-                receive.Dispose() ; reconnect.Dispose() ; client.Dispose()
-                Utils.Wait(z.Timeout)
-                if task.IsCompleted then
-                    Log.Info(z.Tag, $"Closed Socket connection for {z.Url}")
-                else
-                    Log.Warning(z.Tag, $"Failed to close connection for {z.Url}")
+        member this.Close() =
+            try
+                z.Close(this.Send)
+                client.CloseAsync(WebSocketCloseStatus.NormalClosure,
+                                  "Client closing", CancellationToken.None).Wait()
+                receiver.Join()
+                Log.Info(z.Tag, $"Closed Socket connection for {z.Url}")
+            with ex ->
+                Log.Warning(z.Tag, $"Failed to close connection for {z.Url}")
+
+        interface IDisposable with member this.Dispose() = this.Close()

@@ -1,4 +1,4 @@
-    (* [<Struct>]
+    [<Struct>]
     type Bar (o: float, h: float, l: float, c: float, time: time, volume: int64) =
         member this.Open = Utils.Normalize(o)
         member this.High = assert (h >= l) ; Utils.Normalize(h)
@@ -24,4 +24,4 @@
                     l = (Utils.BisectFloat ratio1 ratio2 l b.Low),
                     c = (Utils.BisectFloat ratio1 ratio2 c b.Close),
                     time = (Utils.BisectLong ratio1 ratio2 time b.Time),
-                    volume = (Utils.BisectLong ratio1 ratio2 time b.Volume)) *)
+                    volume = (Utils.BisectLong ratio1 ratio2 time b.Volume))
