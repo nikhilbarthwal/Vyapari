@@ -5,8 +5,7 @@ open System.Text.Json
 
 module Gemini =
 
-    type private Parser(symbol: string, difference: float,
-                        timeout: int, ingest: DataPoint -> unit) =
+    type private Parser(symbol: string, delta: float, ingest: DataPoint -> unit) =
 
         let tag: string = $"Gemini[{symbol}]"
         let mutable bestAsk: Maybe<float> = No
@@ -40,7 +39,7 @@ module Gemini =
                 DataPoint (ask = ask, bid = bid, time = t, volume = -1L)
 
             if bid >= ask then (ingest <| point bid bid) else
-                if ((100.0 * (ask - bid)) / bid) < difference then
+                if ((100.0 * (ask - bid)) / bid) < delta then
                     ingest <| point ask bid
 
         let parse(message: string): unit =
@@ -51,16 +50,14 @@ module Gemini =
             | _ -> ()
 
         interface Socket.Adapter with
-            member this.Timeout: int = timeout
+
             member this.Url: string =
                 $"wss://api.gemini.com/v1/marketdata/{symbol}USD"
 
             member this.Initialize _ = ()
             member this.Tag: string = tag
-            member this.Reconnect(msg, _) =
-                Log.Warning(tag, $"Reconnecting for {symbol} -> {msg}")
             member this.Close _ = ()
-            member this.Receive(message: string, _): unit =
+            member this.Receiver(message: string, _): unit =
                 try (parse message) with e ->
                     Log.Error(tag, $"Unable to parse {message} -> {e.Message}")
 
@@ -69,15 +66,14 @@ module Gemini =
                     length: int,
                     buffer: Buffer<DataPoint>,
                     verbose: bool,
-                    AskBidDifference: float,
-                    Timeout: int) =
+                    AskBidDelta: float) =
 
         let data = Data.Store(tickers, length, buffer, verbose)
 
         let parser (ticker: Ticker): Parser option =
             match ticker with
             | Crypto(symbol) when (symbol = "BTC" || symbol = "ETH") ->
-                Some <| Parser(symbol, AskBidDifference, Timeout, data.Insert ticker)
+                Some <| Parser(symbol, AskBidDelta, data.Insert ticker)
             | x ->
                 Log.Warning("Gemini", $"Gemini does not support {x}") ; None
 

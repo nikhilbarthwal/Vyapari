@@ -24,9 +24,4 @@
         <Compile Include="Gemini.fs" />
         <Compile Include="Tradier.fs" />
     </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Include="Websocket.Client" Version="5.1.2" />
-    </ItemGroup>
-
 </Project>
