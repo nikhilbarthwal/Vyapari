@@ -1,22 +1,19 @@
 namespace Vyapari
 
 open System
-open System.Collections.Immutable
 open System.Diagnostics
 
 
 type time = int64
 
-type Dictionary<'K,'V> = System.Collections.Immutable.ImmutableDictionary<'K,'V>
-
 [<Struct>] type Maybe<'T> = Yes of 'T | No
-
 
 module Utils =
 
-    let CreateDictionary<'V, 'K when 'K: equality>(l: 'K list, f: 'K -> 'V) =
-        let data = System.Collections.Generic.Dictionary<'K, 'V>(l.Length)
-        (for x in l do data.Add(x, f x)) ; data.ToImmutableDictionary()
+    let inline CreateDictionary<'V, 'K when 'K: equality>(l: 'K list, f: 'K -> 'V) =
+        let data = Collections.Concurrent.ConcurrentDictionary<'K, 'V>(l.Length)
+        for x in l do data.Add(x, f x)
+        data :> System.Collections.Generic.IReadOnlyDictionary<'K,'V>
 
     let inline Normalize(x: float) = Math.Round(x, 3)
 

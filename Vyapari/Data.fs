@@ -21,14 +21,13 @@ module Data =
     type Array<'T when 'T :> Data<'T>> = abstract Get: Price<'T> -> bool
 
 
-    type private ArrayBuffer<'T when 'T :> Data<'T>>(ticker: Ticker,
+    type private RingBuffer<'T when 'T :> Data<'T>>(ticker: Ticker,
                                                      length: int,
                                                      buffer: Buffer<'T>,
                                                      verbose: bool) =
         let mutable pos: int = 0
         let mutable count: int = 0
 
-        let object = System.Object()
         let data = Array.Buffer(length, fun _ -> buffer.Initialize())
         let get i = let k = (length + pos - i - 1) % length in data[k]
 
@@ -37,11 +36,7 @@ module Data =
 
         let reset() = count <- 0 ; pos <- 0
 
-        let ingest x =
-            if verbose then Log.Info("Data", $"Price for {ticker} -> {x}")
-            lock object (insert x)
-
-        let queue = buffer.BufferQueue(ingest)
+        let queue = buffer.BufferQueue(insert)
 
         member internal this.Reset() =
             if verbose then Log.Info("Data", $"Reset for {ticker}")
@@ -52,8 +47,8 @@ module Data =
 
         interface Array<'T> with
             member this.Get(prices: Price<'T>): bool =
-                if count < length then false
-                    else lock object (prices.Update get) ; true
+                if count < length then false else
+                    (prices.Update get) ; true
 
 
     type Source<'T when 'T :> Data<'T>> =
