@@ -2,6 +2,7 @@ namespace Vyapari
 
 open System
 open System.Collections.Immutable
+open System.Diagnostics
 
 
 type time = int64
@@ -9,6 +10,7 @@ type time = int64
 type Dictionary<'K,'V> = System.Collections.Immutable.ImmutableDictionary<'K,'V>
 
 [<Struct>] type Maybe<'T> = Yes of 'T | No
+
 
 module Utils =
 
@@ -54,3 +56,56 @@ module Loop =
     let rec Search (f: int -> bool) (a: int) (b: int): int =
         if a = b then b else
             if (f a) then a else (Search f (a + 1) b)
+
+type Array<'T> = abstract member Item: int -> 'T
+                 abstract member Length: int
+                 abstract member Get: int -> 'T
+
+
+module Array =
+
+    type Buffer<'T>(length: int, gen: int -> 'T) =
+        let data = [| for i in 0 .. length - 1 -> gen i |]
+
+        member this.Overwrite(f: int -> 'T) =
+            for i in 0 .. length - 1 do data[i] <- f i
+
+        member this.Length = length
+
+        member this.Item
+            with get(index: int) =  data[index]
+            and set(index: int) (value: 'T) = data[index] <- value
+
+        member this.Get(index) = data[index]
+
+        interface Array<'T> with
+            member this.Item(index: int) = data[index]
+            member this.Length = length
+            member this.Get(index) = data[index]
+
+    let Initialize<'T>(length: int, gen: int -> 'T): Array<'T> = Buffer(length, gen)
+
+
+module Log =
+
+    type private log() =
+        do Trace.Listeners.Add(new ConsoleTraceListener(true)) |> ignore
+
+        member this.Entry (header: string) (tag: string, msg: string): unit =
+            let timestamp = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff")
+            let tagStr = if tag = "" then "" else $" {tag}"
+            Trace.WriteLine($"[{timestamp}] {header}{tagStr}: {msg}")
+
+    let private logger = log()
+    let Warning = logger.Entry "WARNING"
+    let Info = logger.Entry "INFO"
+
+#if DEBUG
+    let Debug = logger.Entry "Debug"
+#endif
+
+    let Error(tag, msg) =
+        logger.Entry "EXCEPTION" (tag, msg) ; raise (System.Exception(msg))
+
+    let Exception(tag, msg, ex: exn) =
+        logger.Entry "EXCEPTION" (tag, msg) ; raise (System.Exception(msg, ex))

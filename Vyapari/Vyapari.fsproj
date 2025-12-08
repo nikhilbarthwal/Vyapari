@@ -12,8 +12,6 @@
 
     <ItemGroup>
         <Compile Include="Utils.fs" />
-        <Compile Include="Log.fs" />
-        <Compile Include="Array.fs" />
         <Compile Include="Definitions.fs" />
         <Compile Include="Data.fs" />
         <Compile Include="Buffer.fs" />

@@ -44,7 +44,7 @@ module Tradier =
                     let currentTime = Utils.CurrentTime()
                     Log.Info(tag, $"Starting session Id: {session} at {currentTime}")
                     let msg = $"[{tickers}], \"sessionid\": \"{session}\" ,"
-                    "{\"symbols\": " + msg + "\"linebreak\": true}"
+                    "{\"symbols\": " + msg + "\"linebreak\": false}"
                 else Log.Error(tag, $"Failed to get Session Id, Response: {text}")
             with
             | ex -> Log.Exception(tag, "Failed to get Session Id", ex)
@@ -82,15 +82,11 @@ module Tradier =
                 token: string) =
 
             let tag = "Tradier"
-            let mutable alive = true
             let dataStore = Data.Store(tickers, length, buffer, verbose)
             let adapter = Adapter(tag, dataStore, token)
             let connection = new Socket.Connection(adapter)
 
             interface Client<DataPoint> with
                 member this.DataSource: Data.Source<DataPoint> = dataStore
-                member this.IsAlive = alive
-                member this.AccountBalance() = 1000.0 // TODO: Fix this!
                 member this.Dispose() =
-                    alive <- false
                     let x: System.IDisposable = connection in x.Dispose()

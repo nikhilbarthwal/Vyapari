@@ -7,8 +7,8 @@ type Strategy = abstract Eval: float -> Order
 type Client<'T when 'T :> Data<'T>> =
     inherit System.IDisposable
     abstract DataSource: Data.Source<'T>
-    abstract IsAlive: bool
-    abstract AccountBalance: unit -> float
+    // abstract IsAlive: bool
+    // abstract AccountBalance: unit -> float
     // abstract PlaceOrder: Order.Entry -> int
     // abstract CancelOrder: 'T -> bool
     // abstract OrderStatus: 'T -> Order.Status
