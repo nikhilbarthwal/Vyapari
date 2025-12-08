@@ -4,11 +4,20 @@ namespace Vyapari
 open System.Collections
 
 
-type Data<'T when 'T :> Data<'T>> = abstract member Price: float
+type Data<'T when 'T :> Data<'T>> = abstract member Price: decimal
                                     abstract member Time: time
                                     static abstract Init: unit -> 'T
 
 module Data =
+
+    type Array<'T when 'T :> Data<'T>> internal(length: int) =
+        let data = Array.Buffer(length, fun _ -> 'T.Init())
+        member internal this.Update(get: int -> 'T) = data.Overwrite(get)
+        interface Vyapari.Array<'T> with
+            member this.Item(index: int) = data[index]
+            member this.Length = length
+            member this.Get(index) = data.Get(index)
+
     type BufferQueue<'T when 'T :> Data<'T>> = abstract member Ingest: 'T -> bool
 
     type Buffer<'T when 'T :> Data<'T>> =
@@ -18,7 +27,7 @@ module Data =
         abstract member Insert: 'T -> unit
 
     type Output<'T when 'T :> Data<'T>> =
-        abstract member Get: Array.Buffer<'T> -> bool
+        abstract member Get: Array<'T> -> bool
 
     type Source<'T when 'T :> Data<'T>> =
         abstract member Item: Ticker -> Input<'T>
@@ -31,14 +40,6 @@ module Data =
 
 
 module Wrapper =
-
-(*    type Price<'T when 'T :> Data<'T>> internal(length: int, f: unit -> 'T) =
-        let data = Array.Buffer(length, fun _ -> f())
-        member internal this.Update(get: int -> 'T) () = data.Overwrite(get)
-        member this.Data: Array<'T> = data
-
-    type Array<'T when 'T :> Data<'T>> = abstract Get: Price<'T> -> bool *)
-
 
     type private RingBuffer<'T when 'T :> Data<'T>>(ticker: Ticker,
                                                      length: int,
@@ -62,8 +63,8 @@ module Wrapper =
         member internal this.Insert(x: 'T) =
             if (not <| queue.Ingest(x)) then this.Reset()
 
-        member this.Get(z: Array.Buffer<'T>): bool =
-                    if count < length then false else (z.Overwrite(get) ; true)
+        member this.Get(l: Data.Array<'T>): bool =
+                    if count < length then false else (l.Update(get) ; true)
 
         interface Data.Input<'T> with member this.Insert(x: 'T) = insert(x)
         interface Data.Output<'T> with member this.Get(l) = this.Get(l)

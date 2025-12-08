@@ -7,7 +7,7 @@ type DataPoint (ask: float, bid: float, time: time, volume: int64) =
     member this.Bid = assert (ask >= bid) ; Utils.Normalize(bid)
     member this.Time = time
     member this.Timestamp = Utils.ToDateTime(time)
-    member this.Price = Utils.Normalize((this.Ask + this.Bid) / 2.0)
+    member this.Price = (this.Ask + this.Bid) / 2.0m
     member this.Volume = volume
     override this.ToString() =
         let ts = Utils.Ascii <| this.Timestamp.ToString("F")
@@ -22,27 +22,16 @@ type DataPoint (ask: float, bid: float, time: time, volume: int64) =
 module DataPoint =
 
     let Init() = DataPoint (0.0, 0.0, 0L, 0L)
-    let Prices(length: int) = Data.Price<DataPoint>(length, Init)
 
-    let private merge (count: int) (data: DataPoint) (x: DataPoint) =
-        let avgFloat = Utils.BisectFloat count 1
-        let avgLong = Utils.BisectLong count 1
-        DataPoint (ask   = avgFloat data.Ask x.Ask,
-                   bid  = avgFloat data.Bid x.Bid,
-                   time   = avgLong data.Time x.Time,
-                   volume = avgLong data.Volume x.Volume)
-
-    let private extrapolate (curr: DataPoint) (prev: DataPoint) (diff: int)
-                    (previous: time) (interval: time) (k: int) =
-        let extrapolateFloat = Utils.BisectFloat k <| diff - k
-        let extrapolateLong = Utils.BisectLong k <| diff - k
-        DataPoint(ask    = extrapolateFloat curr.Ask prev.Ask,
-                  bid    = extrapolateFloat curr.Bid prev.Bid,
-                  time   = previous + interval * (int64 k),
-                  volume = extrapolateLong curr.Volume prev.Volume)
+    let private merge (r1: int) (d1: DataPoint) (r2: int) (d2: DataPoint) =
+        let ask = LinearBuffer.BisectFloat r1 d1.Ask r2 d2.Ask
+        let bid = LinearBuffer.BisectFloat r1 d1.Bid r2 d2.Bid
+        let time = LinearBuffer.BisectLong r1 d1.Time r2 d2.Time
+        let volume = LinearBuffer.BisectLong r1 d1.Volume r2 d2.Volume
+        DataPoint(ask, bid, time, volume)
 
     type Buffer(interval, bucketCount) =
         interface Buffer<DataPoint> with
-            member this.Initialize() = Init()
+
             member this.BufferQueue(insert): BufferQueue<DataPoint> =
                 Buffer.Queue(insert, bucketCount, interval, Init, merge, extrapolate)

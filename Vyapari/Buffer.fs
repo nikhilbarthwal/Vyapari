@@ -7,10 +7,10 @@ module LinearBuffer =
 
     type internal Bisect<'T when 'T :> Data<'T>> = int -> 'T -> int -> 'T -> 'T
 
-    let inline internal BisectFloat (r1: int) (r2: int) (v1: float) (v2: float): float =
+    let inline internal BisectFloat (r1: int) (v1: float) (r2: int) (v2: float) =
         (v1 * (float r1) + v2 * (float r2)) / (float <| r1 + r2)
 
-    let inline internal BisectLong (r1: int) (r2: int) (v1: int64) (v2: int64): int64 =
+    let inline internal BisectLong (r1: int) (v1: int64) (r2: int) (v2: int64) =
         (v1 * (int64 r1) + v2 * (int64 r2)) / (int64 <| r1 + r2)
 
     type private Bucket<'T when 'T :> Data<'T>>(merge: Bisect<'T>) =
@@ -21,7 +21,7 @@ module LinearBuffer =
         member this.Reset() = data <- 'T.Init() ; count <- 0
         member this.Count = count
         member this.Add(x: 'T) =
-            if count > 0 then (data <- merge count data x) else (data <- x)
+            if count > 0 then (data <- merge 1 x count data) else (data <- x)
             count <- count + 1
 
     type private Buckets<'T when 'T :> Data<'T>>(bucketCount: int,
@@ -45,9 +45,7 @@ module LinearBuffer =
         output: 'T -> unit,
         bucketCount: int,
         interval: time,
-        merge: Bisect<'T>,
-        extrapolate: 'T -> 'T -> int -> time -> time -> int -> 'T) =
-
+        merge: Bisect<'T>)
         let buckets = Buckets(bucketCount, merge)
         let mutable previous: time = 0L
         let floor (t:time) = t - (t % (int64 interval))
@@ -64,7 +62,7 @@ module LinearBuffer =
                                    diff previous interval
             for k in [0 .. diff - 1] do (output <| eval k)
 
-        interface Data.Buffer.Queue<'T> with
+        interface Data.BufferQueue<'T> with
             member this.Ingest(input: 'T): bool =
                 let current = floor input.Time
                 if buckets[0].Count = 0 then // Initial case

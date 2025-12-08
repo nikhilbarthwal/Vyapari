@@ -15,7 +15,7 @@ module Utils =
         for x in l do data.Add(x, f x)
         data :> Collections.Generic.IReadOnlyDictionary<'K,'V>
 
-    let inline Normalize(x: float) = Math.Round(x, 3)
+    let inline Normalize(x: float): decimal = decimal <| Math.Round(x, 3)
 
     let Ascii (inp: string): string =
         let bytes = System.Text.Encoding.ASCII.GetBytes(inp)
