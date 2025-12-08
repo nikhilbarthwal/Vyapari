@@ -3,24 +3,31 @@ namespace Vyapari
 open Vyapari
 
 
-module Buffer =
+module LinearBuffer =
 
-    type private Bucket<'T>(init: unit -> 'T, merge: int -> 'T -> 'T -> 'T) =
-        let mutable data: 'T = init()
+    type internal Bisect<'T when 'T :> Data<'T>> = int -> 'T -> int -> 'T -> 'T
+
+    let inline internal BisectFloat (r1: int) (r2: int) (v1: float) (v2: float): float =
+        (v1 * (float r1) + v2 * (float r2)) / (float <| r1 + r2)
+
+    let inline internal BisectLong (r1: int) (r2: int) (v1: int64) (v2: int64): int64 =
+        (v1 * (int64 r1) + v2 * (int64 r2)) / (int64 <| r1 + r2)
+
+    type private Bucket<'T when 'T :> Data<'T>>(merge: Bisect<'T>) =
+        let mutable data: 'T = 'T.Init()
         let mutable count = 0
 
         member this.Data = assert (count > 0) ; data
-        member this.Reset() = data <- init() ; count <- 0
+        member this.Reset() = data <- 'T.Init() ; count <- 0
         member this.Count = count
         member this.Add(x: 'T) =
             if count > 0 then (data <- merge count data x) else (data <- x)
             count <- count + 1
 
     type private Buckets<'T when 'T :> Data<'T>>(bucketCount: int,
-                                                 init: unit -> 'T,
-                                                 merge: int -> 'T -> 'T -> 'T) =
+                                                 merge: Bisect<'T>) =
         let mutable pos = 0
-        let buckets = Array.Initialize(bucketCount, fun _ -> Bucket(init, merge))
+        let buckets = Array.Initialize(bucketCount, fun _ -> Bucket(merge))
         let index k = (pos + k) % bucketCount
         do assert (bucketCount > 1)
 
@@ -38,11 +45,10 @@ module Buffer =
         output: 'T -> unit,
         bucketCount: int,
         interval: time,
-        init: unit -> 'T,
-        merge: int -> 'T -> 'T -> 'T,
+        merge: Bisect<'T>,
         extrapolate: 'T -> 'T -> int -> time -> time -> int -> 'T) =
 
-        let buckets = Buckets(bucketCount, init, merge)
+        let buckets = Buckets(bucketCount, merge)
         let mutable previous: time = 0L
         let floor (t:time) = t - (t % (int64 interval))
 
@@ -58,7 +64,7 @@ module Buffer =
                                    diff previous interval
             for k in [0 .. diff - 1] do (output <| eval k)
 
-        interface BufferQueue<'T> with
+        interface Data.Buffer.Queue<'T> with
             member this.Ingest(input: 'T): bool =
                 let current = floor input.Time
                 if buckets[0].Count = 0 then // Initial case

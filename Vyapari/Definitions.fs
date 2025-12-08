@@ -29,16 +29,13 @@ type Ticker =
             | Crypto(symbol) -> symbol
 
 
-[<Struct>]
+// [<Struct>] TODO: Should this be struct?
 type Order =
-    | Null
-    | OTOCO of ticker: Ticker * quantity: int * price: float *
-                       profit: float * loss: float
+    | OTOCO of ticker: Ticker * quantity: int * price: Decimal *
+                       profit: Decimal * loss: Decimal
     with
     override this.ToString() =
         match this with
-        | Null ->
-            "Null"
         | OTOCO(ticker, quantity, price, profit, loss) ->
             $"Order -> Ticker: {ticker} / Quantity: {quantity} / Price: " +
             $"{price} / ProfitPrice: {profit} / LossPrice: {loss}"

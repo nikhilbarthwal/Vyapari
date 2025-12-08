@@ -72,3 +72,27 @@ type Session<'T when 'T :> Data<'T>>(strategyGen: Data.Source<'T> -> Strategy,
                     waitUntil(time)
                     execute client strategy
         else Log.Warning("Session", "Client is not alive!") ; 3
+
+
+(*
+abstract class Strategy<T>(source: DataSource) =
+    abstract public Eval: float -> Order?
+
+interface Execution.Params: IDisponsible =
+    abstract public Start: (capital: float, DateTime) -> bool
+    abstract public Stop: (capital: float, DateTime) -> bool
+    abstract public Target: (capital: float, DateTime) -> bool
+    abstract public DataSource: unit -> Wrapper
+    abstract public Strategy: Wrapper -> Strategy
+    abstract public Client: unit -> Client
+
+    static Run: Execution -> int
+
+// CoinBase/Tradier/Alpaca will extend Execution.Param for its one purpose
+Main bot:
+let Main _ = use (execute = {
+    new Execution.Params with
+        bool Start() = custom code ...
+}) Execution.Run
+
+*)

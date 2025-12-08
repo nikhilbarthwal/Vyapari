@@ -11,17 +11,11 @@ type time = int64
 module Utils =
 
     let inline CreateDictionary<'V, 'K when 'K: equality>(l: 'K list, f: 'K -> 'V) =
-        let data = Collections.Concurrent.ConcurrentDictionary<'K, 'V>(l.Length)
+        let data = Collections.Generic.Dictionary<'K, 'V>(l.Length)
         for x in l do data.Add(x, f x)
-        data :> System.Collections.Generic.IReadOnlyDictionary<'K,'V>
+        data :> Collections.Generic.IReadOnlyDictionary<'K,'V>
 
     let inline Normalize(x: float) = Math.Round(x, 3)
-
-    let BisectFloat (r1: int) (r2: int) (v1: float) (v2: float): float =
-        (v1 * (float r1) + v2 * (float r2)) / (float <| r1 + r2)
-
-    let BisectLong (r1: int) (r2: int) (v1: int64) (v2: int64): int64 =
-        (v1 * (int64 r1) + v2 * (int64 r2)) / (int64 <| r1 + r2)
 
     let Ascii (inp: string): string =
         let bytes = System.Text.Encoding.ASCII.GetBytes(inp)
@@ -89,7 +83,7 @@ module Log =
         do Trace.Listeners.Add(new ConsoleTraceListener(true)) |> ignore
 
         member this.Entry (header: string) (tag: string, msg: string): unit =
-            let timestamp = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff")
+            let timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff")
             let tagStr = if tag = "" then "" else $" {tag}"
             Trace.WriteLine($"[{timestamp}] {header}{tagStr}: {msg}")
 
@@ -102,7 +96,7 @@ module Log =
 #endif
 
     let Error(tag, msg) =
-        logger.Entry "EXCEPTION" (tag, msg) ; raise (System.Exception(msg))
+        logger.Entry "EXCEPTION" (tag, msg) ; raise <| Exception(msg)
 
     let Exception(tag, msg, ex: exn) =
-        logger.Entry "EXCEPTION" (tag, msg) ; raise (System.Exception(msg, ex))
+        logger.Entry "EXCEPTION" (tag, msg) ; raise <| Exception(msg, ex)
