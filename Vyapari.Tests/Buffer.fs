@@ -33,7 +33,7 @@ module Buffer =
         let key = batch b.Time
         if m.ContainsKey(key) then m.Add(key, b::m[key]) else m.Add(key, [b])
 
-    let private check(f1: float, f2: float): bool = abs(f1 - f2) < 0.005
+    let private check(f1: decimal, f2: decimal): bool = abs(f1 - f2) < 0.005m
 
     type private combine(input: DataPoint list) =
         let data: Map<time, DataPoint list> = List.fold addMap Map.empty input
@@ -43,8 +43,8 @@ module Buffer =
             check(bars |> List.map _.Bid |> List.average, b.Bid)
 
     let private placement (first: DataPoint) (last: DataPoint) (z: DataPoint): bool =
-        let d0 = float <| (batch z.Time) - (batch first.Time)
-        let d1 = float <| (batch last.Time) - (batch first.Time)
+        let d0 = decimal <| (batch z.Time) - (batch first.Time)
+        let d1 = decimal <| (batch last.Time) - (batch first.Time)
 
         let decide xFirst xLast x=
             check(d1 * (x - xFirst) , d0 * (xLast - xFirst))
@@ -56,7 +56,7 @@ module Buffer =
 
     let private equal (x: DataPoint) (y: DataPoint): bool = (x.Time = y.Time)
 
-    type private BufferTest(buffer: Buffer<DataPoint>) =
+    type private BufferTest(buffer: Data.Buffer<DataPoint>) =
         let mutable insertMap: Map<time, DataPoint list> = Map.empty
         let mutable resetMap: Map<time, DataPoint list> = Map.empty
         let resetData (bar: DataPoint): unit = Log.Info(tag, $"Reset Bar -> {bar}")
@@ -69,7 +69,7 @@ module Buffer =
             let key = batch b.Time
             if m.ContainsKey(key) then m[batch b.Time].Length = 1 else true
 
-        let queue = buffer.BufferQueue(insertData)
+        let queue = buffer.Queue(insertData)
 
         member this.Append(sample: DataPoint): bool =
             if queue.Ingest(sample) then

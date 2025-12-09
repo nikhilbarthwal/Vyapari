@@ -37,9 +37,9 @@ module Ingestion =
                 let m = $"Diff = {diff} <> interval = {interval} at {i} for {ticker}"
                 Log.Warning(tag,  m) ; false
 
-        let prices = DataPoint.Prices(length)
+        let prices = Data.Array(length)
         if source[ticker].Get(prices) then
-            if (Loop.Verify (check prices.Data) 1 length) then
+            if ([1 .. length] |> List.forall (check prices)) then
                 Log.Info(tag, $"Ingestion successfully passed for {ticker}") ; true
             else
                 Log.Info(tag, $"Ingestion failed for {ticker}") ; false
@@ -50,7 +50,8 @@ module Ingestion =
     let Ingestion() =
         let tag, interval, size, tickers = tag(), interval(), size(), tickers()
         let buffer = DataPoint.Buffer(interval, buckets())
-        let store = Data.Store(tickers, size, buffer, false)
+        let wrapper = Wrapper.DataRepository(tickers, size, buffer, false)
+        let store: Data.Store<DataPoint> = wrapper
         for ticker, bar in genDataPoints(tickers, interval, size) do
-            store.Insert ticker bar
-        Assert.That(Utils.Test (verify store tag interval size) tickers)
+            store[ticker].Insert bar
+        Assert.That(Utils.Test (verify wrapper tag interval size) tickers)
