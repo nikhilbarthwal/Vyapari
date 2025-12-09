@@ -55,14 +55,11 @@ module LinearBuffer =
         let extrapolate (diff: int): unit =
 #if DEBUG
             assert (diff > 0)
-            assert (buckets[0].Count > 0)
             assert (buckets[diff].Count = 1)
-            if diff > 1 then
-                for k in [1 .. diff - 1] do assert(buckets[k].Count = 0)
+            for k in [0 .. diff - 1] do assert(buckets[k].Count = 0)
 #endif
-            let eval = extrapolate (buckets[diff].Data) (buckets[0].Data)
-                                   diff previous interval
-            for k in [0 .. diff - 1] do (output <| eval k)
+            for k in [0 .. diff - 1] do
+                output <| merge k (buckets[0].Data) (diff - k) (buckets[diff].Data)
 
         interface Data.BufferQueue<'T> with
             member this.Ingest(input: 'T): bool =
