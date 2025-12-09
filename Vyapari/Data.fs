@@ -1,18 +1,20 @@
 namespace Vyapari
 
-#nowarn "3535"
 open System.Collections
 
 
 type Data<'T when 'T :> Data<'T>> = abstract member Price: decimal
                                     abstract member Time: time
-                                    static abstract Init: unit -> 'T
 
 module Data =
 
-    type Array<'T when 'T :> Data<'T>>(length: int) =
-        let data = Array.Buffer(length, fun _ -> 'T.Init())
+    type Array<'T when 'T :> Data<'T>>(length: int, init: unit -> 'T) =
+        let data = Array.Buffer(length, fun _ -> init())
         member internal this.Update(get: int -> 'T) = data.Overwrite(get)
+        member internal this.Item
+            with get(index: int) =  data[index]
+            and set(index: int) (value: 'T) = data[index] <- value
+
         interface Vyapari.Array<'T> with
             member this.Item(index: int) = data[index]
             member this.Length = length
@@ -22,6 +24,7 @@ module Data =
 
     type Buffer<'T when 'T :> Data<'T>> =
         abstract member Queue: ('T -> unit) -> BufferQueue<'T>
+        abstract member Init: unit -> 'T
 
     type Input<'T when 'T :> Data<'T>> =
         abstract member Insert: 'T -> unit
@@ -49,7 +52,7 @@ module Wrapper =
         let mutable pos: int = 0
         let mutable count: int = 0
 
-        let data = Array.Buffer(length, fun _ -> 'T.Init())
+        let data = Data.Array(length, buffer.Init)
         let get i = let k = (length + pos - i - 1) % length in data[k]
 
         let insert(x: 'T): unit = data[pos] <- x ; count <- count + 1

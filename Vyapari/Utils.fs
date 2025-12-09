@@ -35,19 +35,7 @@ module Utils =
 
     let inline Max (f1:float) (f2: float): float = if f1 > f2 then f1 else f2
 
-(*
-module Loop =
 
-    [<TailCall>]
-    let rec Verify (f: int -> bool) (a: int) (b: int): bool =
-        if a = b then true else
-            if (f a) then (Verify f (a + 1) b) else false
-
-    [<TailCall>]
-    let rec Search (f: int -> bool) (a: int) (b: int): int =
-        if a = b then b else
-            if (f a) then a else (Search f (a + 1) b)
-*)
 type Array<'T> = abstract member Item: int -> 'T
                  abstract member Length: int
                  abstract member Get: int -> 'T

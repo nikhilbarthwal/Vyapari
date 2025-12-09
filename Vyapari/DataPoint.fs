@@ -14,7 +14,6 @@ type DataPoint = { Ask: decimal; Bid: decimal; Time: time; Volume: int64} with
     interface Data<DataPoint> with
         member this.Price = this.Price
         member this.Time = this.Time
-        static member Init() = Data.Init()
 
 
 module DataPoint =
@@ -25,7 +24,9 @@ module DataPoint =
         Time = LinearBuffer.BisectLong r1 d1.Time r2 d2.Time
         Volume = LinearBuffer.BisectLong r1 d1.Volume r2 d2.Volume }
 
-    type Buffer(interval, bucketCount) =
-        interface Data.Buffer<DataPoint> with
+    let Buffer(interval, bucketCount): Data.Buffer<DataPoint> =
+        { new Data.Buffer<DataPoint> with
             member this.Queue(insert): Data.BufferQueue<DataPoint> =
-                LinearBuffer.Queue(insert, bucketCount, interval, merge)
+                LinearBuffer.Queue(insert, bucketCount,
+                                   interval, DataPoint.Init, merge)
+            member this.Init () = DataPoint.Init() }

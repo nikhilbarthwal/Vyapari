@@ -5,7 +5,7 @@ open Vyapari
 
 module LinearBuffer =
 
-    type internal Bisect<'T when 'T :> Data<'T>> = int -> 'T -> int -> 'T -> 'T
+    type internal Bisect<'T> = int -> 'T -> int -> 'T -> 'T
 
     let inline internal BisectDecimal (r1: int) (v1: decimal)
                                       (r2: int) (v2: decimal) =
@@ -14,21 +14,23 @@ module LinearBuffer =
     let inline internal BisectLong (r1: int) (v1: int64) (r2: int) (v2: int64) =
         (v1 * (int64 r1) + v2 * (int64 r2)) / (int64 <| r1 + r2)
 
-    type private Bucket<'T when 'T :> Data<'T>>(merge: Bisect<'T>) =
-        let mutable data: 'T = 'T.Init()
+    type private Bucket<'T when 'T :> Data<'T>>(init: unit -> 'T,
+                                                merge: Bisect<'T>) =
+        let mutable data: 'T = init()
         let mutable count = 0
 
         member this.Data = assert (count > 0) ; data
-        member this.Reset() = data <- 'T.Init() ; count <- 0
+        member this.Reset() = data <- init() ; count <- 0
         member this.Count = count
         member this.Add(x: 'T) =
             if count > 0 then (data <- merge 1 x count data) else (data <- x)
             count <- count + 1
 
     type private Buckets<'T when 'T :> Data<'T>>(bucketCount: int,
+                                                 init: unit -> 'T,
                                                  merge: Bisect<'T>) =
         let mutable pos = 0
-        let buckets = Array.Initialize(bucketCount, fun _ -> Bucket(merge))
+        let buckets = Array.Initialize(bucketCount, fun _ -> Bucket(init, merge))
         let index k = (pos + k) % bucketCount
         do assert (bucketCount > 1)
 
@@ -46,9 +48,10 @@ module LinearBuffer =
         output: 'T -> unit,
         bucketCount: int,
         interval: time,
+        init: unit -> 'T,
         merge: Bisect<'T>) =
 
-        let buckets = Buckets(bucketCount, merge)
+        let buckets = Buckets(bucketCount, init, merge)
         let mutable previous: time = 0L
         let floor (t:time) = t - (t % (int64 interval))
 
