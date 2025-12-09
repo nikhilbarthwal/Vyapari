@@ -4,16 +4,14 @@
         <TargetFramework>net10.0</TargetFramework>
         <IsTestProject>false</IsTestProject>
         <OutputType>Library</OutputType>
-        <AssemblyName>Vyapari.Core</AssemblyName>
-        <RootNamespace>Vyapari.Core</RootNamespace>
+        <AssemblyName>Vyapari</AssemblyName>
+        <RootNamespace>Vyapari</RootNamespace>
         <LangVersion>10.0</LangVersion>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     </PropertyGroup>
 
     <ItemGroup>
         <Compile Include="Utils.fs" />
-        <Compile Include="Log.fs" />
-        <Compile Include="Array.fs" />
         <Compile Include="Definitions.fs" />
         <Compile Include="Data.fs" />
         <Compile Include="Buffer.fs" />
