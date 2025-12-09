@@ -10,7 +10,7 @@ type Data<'T when 'T :> Data<'T>> = abstract member Price: decimal
 
 module Data =
 
-    type Array<'T when 'T :> Data<'T>> internal(length: int) =
+    type Array<'T when 'T :> Data<'T>>(length: int) =
         let data = Array.Buffer(length, fun _ -> 'T.Init())
         member internal this.Update(get: int -> 'T) = data.Overwrite(get)
         interface Vyapari.Array<'T> with
