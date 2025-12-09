@@ -30,13 +30,14 @@ module Data =
         abstract member Get: Array<'T> -> bool
 
     type Source<'T when 'T :> Data<'T>> =
-        abstract member Item: Ticker -> Input<'T>
+        abstract member Item: Ticker -> Output<'T>
         abstract member BufferLength: int
         abstract member Tickers: Ticker list
 
     type Store<'T when 'T :> Data<'T>> =
-        abstract member Item: Ticker -> Output<'T>
+        abstract member Item: Ticker -> Input<'T>
         abstract member Reset: Ticker -> unit
+        abstract member Tickers: Ticker list
 
 
 module Wrapper =
@@ -70,10 +71,10 @@ module Wrapper =
         interface Data.Output<'T> with member this.Get(l) = this.Get(l)
 
 
-    type DataStore<'T when 'T :> Data<'T>>(tickers: Ticker list,
-                                       length: int,
-                                       buffer: Data.Buffer<'T>,
-                                       verbose: bool) =
+    type DataRepository<'T when 'T :> Data<'T>>(tickers: Ticker list,
+                                                length: int,
+                                                buffer: Data.Buffer<'T>,
+                                                verbose: bool) =
         let dataMap: Generic.IReadOnlyDictionary<Ticker, RingBuffer<'T>> =
             let data = Concurrent.ConcurrentDictionary<Ticker, RingBuffer<'T>>()
             for t in tickers do
@@ -84,8 +85,9 @@ module Wrapper =
         interface Data.Source<'T> with
             member this.Tickers: Ticker list = tickers
             member this.BufferLength: int = length
-            member this.Item(ticker: Ticker): Data.Input<'T> = dataMap[ticker]
+            member this.Item(ticker: Ticker): Data.Output<'T> = dataMap[ticker]
 
         interface Data.Store<'T> with
-            member this.Item(ticker: Ticker): Data.Output<'T> = dataMap[ticker]
+            member this.Tickers: Ticker list = tickers
+            member this.Item(ticker: Ticker): Data.Input<'T> = dataMap[ticker]
             member this.Reset(ticker: Ticker) = dataMap[ticker].Reset()

@@ -1,17 +1,20 @@
 namespace Vyapari
 
 
-type Strategy = abstract Eval: float -> Order
+type Strategy = abstract Eval: float -> Maybe<Order>
 
 
 type Client<'T when 'T :> Data<'T>> =
     inherit System.IDisposable
     abstract DataSource: Data.Source<'T>
-    // abstract IsAlive: bool
-    // abstract AccountBalance: unit -> float
-    // abstract PlaceOrder: Order.Entry -> int
-    // abstract CancelOrder: 'T -> bool
-    // abstract OrderStatus: 'T -> Order.Status
+
+
+(*
+    abstract IsAlive: bool
+    abstract AccountBalance: unit -> float
+    abstract PlaceOrder: Order -> int
+    abstract CancelOrder: 'T -> bool
+    //abstract OrderStatus: 'T -> Order.Status
 
 
 
@@ -37,8 +40,8 @@ type Session<'T when 'T :> Data<'T>>(strategyGen: Data.Source<'T> -> Strategy,
 
         while (continueExecutionLoop <| client.AccountBalance()) do
             match strategy.Eval(initialCapital) with
-            | Order.Null -> Utils.Wait(1)
-            | order -> Log.Info("Order", $"Placed -> {order}") ; Utils.Wait(5)
+            | No -> Utils.Wait(1)
+            | Yes(order) -> Log.Info("Order", $"Placed -> {order}") ; Utils.Wait(5)
 
         let time = Utils.CurrentTime()
         let balance = client.AccountBalance()
@@ -74,7 +77,6 @@ type Session<'T when 'T :> Data<'T>>(strategyGen: Data.Source<'T> -> Strategy,
         else Log.Warning("Session", "Client is not alive!") ; 3
 
 
-(*
 abstract class Strategy<T>(source: DataSource) =
     abstract public Eval: float -> Order?
 
