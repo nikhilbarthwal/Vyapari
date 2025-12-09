@@ -1,7 +1,7 @@
 namespace Vyapari
 
 
-type Data<'T when 'T :> Data<'T>> = abstract member Price: float
+type Data<'T when 'T :> Data<'T>> = abstract member Price: decimal
                                     abstract member Time: time
 
 and BufferQueue<'T when 'T :> Data<'T>> = abstract member Ingest: 'T -> bool

@@ -59,10 +59,10 @@ module Tradier =
                         let timestamp = json.GetProperty("askdate").GetString()
                         let epoch: time = System.Int64.Parse(timestamp) / 1000L
                         let symbol = json.GetProperty("symbol").GetString()
-                        DataPoint(ask = json.GetProperty("ask").GetDouble(),
-                                  bid = json.GetProperty("bid").GetDouble(),
-                                  time = epoch,
-                                  volume = -1L)
+                        let get (key: string) =
+                            decimal <| json.GetProperty(key).GetDouble()
+                        { Ask = get "ask" ; Bid = get "bid"
+                          Time = epoch ; Volume = -1L }
                         |> store.Insert tickers[symbol]
                 with ex ->
                     Log.Warning(tag,

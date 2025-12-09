@@ -15,10 +15,10 @@ module Utils =
         for x in l do data.Add(x, f x)
         data :> Collections.Generic.IReadOnlyDictionary<'K,'V>
 
-    let inline Normalize(x: float) = Math.Round(x, 3)
+    let inline Normalize(x: float): Decimal = decimal <| Math.Round(x, 3)
 
-    let BisectFloat (r1: int) (r2: int) (v1: float) (v2: float): float =
-        (v1 * (float r1) + v2 * (float r2)) / (float <| r1 + r2)
+    let BisectFloat (r1: int) (r2: int) (v1: decimal) (v2: decimal): decimal =
+        (v1 * (decimal r1) + v2 * (decimal r2)) / (decimal <| r1 + r2)
 
     let BisectLong (r1: int) (r2: int) (v1: int64) (v2: int64): int64 =
         (v1 * (int64 r1) + v2 * (int64 r2)) / (int64 <| r1 + r2)

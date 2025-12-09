@@ -10,10 +10,8 @@ module Utils =
         List.fold check true v
 
     let Bar (random: System.Random) (t: time) =
-        DataPoint(ask = 3.0 + random.NextDouble(),
-                  bid = 1.0 + random.NextDouble(),
-                  time = t,
-                  volume = 0)
+        let get (f: float) = decimal <| 3.0 + random.NextDouble()
+        { Ask = get 3.0 ; Bid = get 1.0 ; Time = t ; Volume = 0 }
 
     let Gen (length: int) (min: int, max: int): Array<int> =
         let random = System.Random(System.Guid.NewGuid().GetHashCode())

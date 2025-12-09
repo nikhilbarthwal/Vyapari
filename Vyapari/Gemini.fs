@@ -5,17 +5,17 @@ open System.Text.Json
 
 module Gemini =
 
-    type private Parser(symbol: string, delta: float, ingest: DataPoint -> unit) =
+    type private Parser(symbol: string, delta: decimal, ingest: DataPoint -> unit) =
 
         let tag: string = $"Gemini[{symbol}]"
-        let mutable bestAsk: Maybe<float> = No
-        let mutable bestBid: Maybe<float> = No
+        let mutable bestAsk: Maybe<decimal> = No
+        let mutable bestBid: Maybe<decimal> = No
 
         let processEvent (event: JsonElement): unit =
             if (event.GetProperty("type").GetString() = "change" &&
                 event.GetProperty("reason").GetString() = "place") then
 
-                let price: float = float <| event.GetProperty("price").GetString()
+                let price = decimal <| event.GetProperty("price").GetString()
                 let side: string = event.GetProperty("side").GetString()
 
                 if side = "ask" then
@@ -33,13 +33,12 @@ module Gemini =
                 for k in [1 .. json.GetProperty("events").GetArrayLength()] do
                     processEvent <| json.GetProperty("events").Item(k - 1)
 
-        let insert (ask: float) (bid: float) (json: JsonElement): unit =
+        let insert (ask: decimal) (bid: decimal) (json: JsonElement): unit =
             let point ask bid : DataPoint =
                 let t = json.GetProperty("timestamp").GetInt64()
-                DataPoint (ask = ask, bid = bid, time = t, volume = -1L)
-
+                { Ask = ask ; Bid = bid ; Time = t ; Volume = -1L }
             if bid >= ask then (ingest <| point bid bid) else
-                if ((100.0 * (ask - bid)) / bid) < delta then
+                if ((100m * (ask - bid)) / bid) < delta then
                     ingest <| point ask bid
 
         let parse(message: string): unit =
@@ -66,7 +65,7 @@ module Gemini =
                     length: int,
                     buffer: Buffer<DataPoint>,
                     verbose: bool,
-                    AskBidDelta: float) =
+                    AskBidDelta: decimal) =
 
         let data = Data.Store(tickers, length, buffer, verbose)
 
