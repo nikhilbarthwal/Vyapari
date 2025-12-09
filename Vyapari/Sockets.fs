@@ -15,7 +15,7 @@ module Socket =
         abstract Tag: string
         abstract Close: (string -> unit) -> unit
 
-    type Connection(z: Adapter) =
+    type private Connect(z: Adapter, reconnect: int -> unit) =
 
         let send (cl: ClientWebSocket) (message: string) =
             if (cl.State = WebSocketState.Open) then
@@ -24,7 +24,9 @@ module Socket =
                 cl.SendAsync(buffer, WebSocketMessageType.Text, true,
                              CancellationToken.None).Wait()
                 Log.Info(z.Tag, $"Sent: {message}")
-            else Log.Info(z.Tag, "Connection is not open.")
+            else
+                Log.Info(z.Tag, "Connection is not open.")
+                reconnect 1
 
         let receiver (cl: ClientWebSocket) =
             let buffer: byte[] = Array.zeroCreate 8192
@@ -40,7 +42,9 @@ module Socket =
                         if (result.MessageType = WebSocketMessageType.Text) then
                             let msg = Encoding.UTF8.GetString(buffer,0, result.Count)
                             z.Receiver(msg, send cl)
-                with ex -> Log.Info(z.Tag, $"Error: {ex.Message}")
+                with ex ->
+                    Log.Info(z.Tag, $"Error: {ex.Message}")
+                    reconnect 1
 
         let client, receiver =
             try
@@ -57,6 +61,8 @@ module Socket =
 
         member this.Send(msg: string) = send client msg
 
+        member this.IsAlive: bool = client.State = WebSocketState.Open
+
         member this.Close() =
             try
                 z.Close(this.Send)
@@ -68,3 +74,36 @@ module Socket =
                 Log.Warning(z.Tag, $"Failed to close connection for {z.Url}")
 
         interface IDisposable with member this.Dispose() = this.Close()
+
+    type Connection(z: Adapter) =
+
+        let timeout = 5
+        let maxReconnectAttempts = 3
+
+        let mutable connection: Maybe<Connect> = No
+
+        let rec reconnect attempt: unit =
+            if attempt > maxReconnectAttempts then
+                Log.Exception(z.Tag, $"Unable to reconnect to {z.Url}",
+                              Exception("$Unable to reconnect to {z.Url}"))
+            else
+                Log.Warning(z.Tag, $"Reconnecting to {z.Url}, Attempt {attempt}")
+                let conn = new Connect(z, reconnect)
+                Utils.Wait timeout
+                if conn.IsAlive then connection <- Yes(conn)
+                    else (reconnect <| attempt + 1)
+
+        do connection <- Yes(new Connect(z, reconnect))
+
+        member this.Send(msg: string) =
+            match connection with
+            | Yes(conn) -> conn.Send msg
+            | No ->
+                let err = $"Attempting to access uninitialized connection {z.Url}"
+                Log.Exception(z.Tag, err, Exception(err))
+
+        member this.Dispose() =
+            match connection with Yes(conn) -> conn.Close() ; connection <- No
+                                | No -> ()
+
+        interface IDisposable with member this.Dispose()= this.Dispose()
