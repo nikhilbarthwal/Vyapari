@@ -74,16 +74,12 @@ module Wrapper =
                                        length: int,
                                        buffer: Data.Buffer<'T>,
                                        verbose: bool) =
-        let dataMap =
+        let dataMap: Generic.IReadOnlyDictionary<Ticker, RingBuffer<'T>> =
             let data = Concurrent.ConcurrentDictionary<Ticker, RingBuffer<'T>>()
             for t in tickers do
                 let b = data.TryAdd(t, RingBuffer(t, length, buffer, verbose))
                 assert b
-            data :> Generic.IReadOnlyDictionary<Ticker, RingBuffer<'T>>
-
-        member this.Tickers: Ticker list = tickers
-        member this.Reset ticker = dataMap[ticker].Reset()
-        member this.Insert ticker data = dataMap[ticker].Insert(data)
+            data
 
         interface Data.Source<'T> with
             member this.Tickers: Ticker list = tickers

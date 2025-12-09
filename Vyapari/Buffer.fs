@@ -7,8 +7,9 @@ module LinearBuffer =
 
     type internal Bisect<'T when 'T :> Data<'T>> = int -> 'T -> int -> 'T -> 'T
 
-    let inline internal BisectFloat (r1: int) (v1: float) (r2: int) (v2: float) =
-        (v1 * (float r1) + v2 * (float r2)) / (float <| r1 + r2)
+    let inline internal BisectDecimal (r1: int) (v1: decimal)
+                                      (r2: int) (v2: decimal) =
+        (v1 * (decimal r1) + v2 * (decimal r2)) / (decimal <| r1 + r2)
 
     let inline internal BisectLong (r1: int) (v1: int64) (r2: int) (v2: int64) =
         (v1 * (int64 r1) + v2 * (int64 r2)) / (int64 <| r1 + r2)
@@ -45,7 +46,8 @@ module LinearBuffer =
         output: 'T -> unit,
         bucketCount: int,
         interval: time,
-        merge: Bisect<'T>)
+        merge: Bisect<'T>) =
+
         let buckets = Buckets(bucketCount, merge)
         let mutable previous: time = 0L
         let floor (t:time) = t - (t % (int64 interval))
