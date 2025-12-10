@@ -17,12 +17,6 @@ module Utils =
 
     let inline Normalize(x: float): Decimal = decimal <| Math.Round(x, 3)
 
-    let BisectFloat (r1: int) (r2: int) (v1: decimal) (v2: decimal): decimal =
-        (v1 * (decimal r1) + v2 * (decimal r2)) / (decimal <| r1 + r2)
-
-    let BisectLong (r1: int) (r2: int) (v1: int64) (v2: int64): int64 =
-        (v1 * (int64 r1) + v2 * (int64 r2)) / (int64 <| r1 + r2)
-
     let Ascii (inp: string): string =
         let bytes = System.Text.Encoding.ASCII.GetBytes(inp)
         System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length).Replace("?", " ")

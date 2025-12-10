@@ -10,7 +10,7 @@ module Utils =
         List.fold check true v
 
     let Bar (random: System.Random) (t: time) =
-        let get (f: float) = decimal <| 3.0 + random.NextDouble()
+        let get (f: float) = Vyapari.Utils.Normalize(3.0 + random.NextDouble())
         { Ask = get 3.0 ; Bid = get 1.0 ; Time = t ; Volume = 0 }
 
     let Gen (length: int) (min: int, max: int): Array<int> =

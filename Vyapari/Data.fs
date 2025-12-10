@@ -48,7 +48,7 @@ module Data =
             lock object reset
 
         member internal this.Insert(x: 'T) =
-            if (not <| queue.Ingest(x)) then this.Reset()
+            if (not <| queue.Ingest x) then this.Reset()
 
         interface Array<'T> with
             member this.Get(prices: Price<'T>): bool =
