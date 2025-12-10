@@ -15,8 +15,7 @@
         <Compile Include="Definitions.fs" />
         <Compile Include="Data.fs" />
         <Compile Include="Buffer.fs" />
-        <Compile Include="DataPoint.fs" />
-        <!-- Compile Include="DataBar.fs" / -->
+        <Compile Include="DataItems.fs" />
         <Compile Include="Sockets.fs" />
         <Compile Include="Execution.fs" />
         <Compile Include="Gemini.fs" />

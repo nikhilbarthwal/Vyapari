@@ -29,7 +29,9 @@ module LinearBuffer =
         member this.Reset() = data <- adapter.Init() ; count <- 0
         member this.Count = count
         member this.Add(x: 'T) (t: time) =
-            if count > 0 then (data <- adapter.Merge 1 count x data t) else (data <- x)
+            if count > 0 then
+                data <- adapter.Merge 1 count x data t
+            else (data <- x)
             count <- count + 1
         static member Create(adapter: Adapter<'T>) (_:int) = Bucket(adapter)
 
@@ -49,7 +51,8 @@ module LinearBuffer =
         member this.Reset() =
             pos <- 0 ; for i in [0 .. adapter.BucketCount - 1] do buckets[i].Reset()
 
-    type internal Queue<'T when 'T :> Data<'T>>(adapter: Adapter<'T>, output: 'T -> unit) =
+    type internal Queue<'T when 'T :> Data<'T>>(adapter: Adapter<'T>,
+                                                output: 'T -> unit) =
 
         let buckets = Buckets(adapter)
         let mutable previous: time = 0L
