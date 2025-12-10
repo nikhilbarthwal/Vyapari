@@ -33,7 +33,7 @@ module LinearBuffer =
                 data <- adapter.Merge 1 count x data t
             else (data <- x)
             count <- count + 1
-        static member Create(adapter: Adapter<'T>) (_:int) = Bucket(adapter)
+        static member Create(adapter: Adapter<'T>) (_: int) = Bucket(adapter)
 
     type private Buckets<'T when 'T :> Data<'T>>(adapter: Adapter<'T>) =
         let mutable pos = 0
@@ -71,7 +71,7 @@ module LinearBuffer =
                 |> adapter.Merge k (diff - k) (buckets[diff].Data) (buckets[0].Data)
                 |> output
 
-        interface BufferQueue<'T> with
+        interface Data.BufferQueue<'T> with
             member this.Ingest(input: 'T): bool =
                 let current = floor input.Time
                 if buckets[0].Count = 0 then // Initial case

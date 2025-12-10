@@ -1,17 +1,20 @@
 namespace Vyapari
 
 
-type Strategy = abstract Eval: float -> Order
+type Strategy = abstract Eval: float -> Maybe<Order>
 
 
 type Client<'T when 'T :> Data<'T>> =
     inherit System.IDisposable
     abstract DataSource: Data.Source<'T>
+
+
+(*
     abstract IsAlive: bool
     abstract AccountBalance: unit -> float
-    // abstract PlaceOrder: Order.Entry -> int
-    // abstract CancelOrder: 'T -> bool
-    // abstract OrderStatus: 'T -> Order.Status
+    abstract PlaceOrder: Order -> int
+    abstract CancelOrder: 'T -> bool
+    //abstract OrderStatus: 'T -> Order.Status
 
 
 
@@ -37,8 +40,8 @@ type Session<'T when 'T :> Data<'T>>(strategyGen: Data.Source<'T> -> Strategy,
 
         while (continueExecutionLoop <| client.AccountBalance()) do
             match strategy.Eval(initialCapital) with
-            | Order.Null -> Utils.Wait(1)
-            | order -> Log.Info("Order", $"Placed -> {order}") ; Utils.Wait(5)
+            | No -> Utils.Wait(1)
+            | Yes(order) -> Log.Info("Order", $"Placed -> {order}") ; Utils.Wait(5)
 
         let time = Utils.CurrentTime()
         let balance = client.AccountBalance()
@@ -72,3 +75,26 @@ type Session<'T when 'T :> Data<'T>>(strategyGen: Data.Source<'T> -> Strategy,
                     waitUntil(time)
                     execute client strategy
         else Log.Warning("Session", "Client is not alive!") ; 3
+
+
+abstract class Strategy<T>(source: DataSource) =
+    abstract public Eval: float -> Order?
+
+interface Execution.Params: IDisponsible =
+    abstract public Start: (capital: float, DateTime) -> bool
+    abstract public Stop: (capital: float, DateTime) -> bool
+    abstract public Target: (capital: float, DateTime) -> bool
+    abstract public DataSource: unit -> Wrapper
+    abstract public Strategy: Wrapper -> Strategy
+    abstract public Client: unit -> Client
+
+    static Run: Execution -> int
+
+// CoinBase/Tradier/Alpaca will extend Execution.Param for its one purpose
+Main bot:
+let Main _ = use (execute = {
+    new Execution.Params with
+        bool Start() = custom code ...
+}) Execution.Run
+
+*)

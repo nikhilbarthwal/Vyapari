@@ -5,7 +5,7 @@ open System.Text.Json
 
 module Gemini =
 
-    type private Parser(symbol: string, delta: decimal, ingest: DataPoint -> unit) =
+    type private Parser(symbol: string, delta: decimal, insert: DataPoint -> unit) =
 
         let tag: string = $"Gemini[{symbol}]"
         let mutable bestAsk: Maybe<decimal> = No
@@ -37,9 +37,10 @@ module Gemini =
             let point ask bid : DataPoint =
                 let t = json.GetProperty("timestamp").GetInt64()
                 { Ask = ask ; Bid = bid ; Time = t ; Volume = -1L }
-            if bid >= ask then (ingest <| point bid bid) else
-                if ((100m * (ask - bid)) / bid) < delta then
-                    ingest <| point ask bid
+
+            if bid >= ask then (insert <| point bid bid) else
+                if ((100.0m * (ask - bid)) / bid) < delta then
+                    insert <| point ask bid
 
         let parse(message: string): unit =
             let json: JsonElement = JsonDocument.Parse(message).RootElement
@@ -63,16 +64,17 @@ module Gemini =
 
     type Connection(tickers: Ticker list,
                     length: int,
-                    buffer: Buffer<DataPoint>,
+                    buffer: Data.Buffer<DataPoint>,
                     verbose: bool,
                     AskBidDelta: decimal) =
 
-        let data = Data.Store(tickers, length, buffer, verbose)
+        let data = Data.Map(tickers, length, buffer, verbose)
+        let store: Data.Store<DataPoint> = data
 
         let parser (ticker: Ticker): Parser option =
             match ticker with
             | Crypto(symbol) when (symbol = "BTC" || symbol = "ETH") ->
-                Some <| Parser(symbol, AskBidDelta, data.Insert ticker)
+                Some <| Parser(symbol, AskBidDelta, store[ticker].Insert)
             | x ->
                 Log.Warning("Gemini", $"Gemini does not support {x}") ; None
 

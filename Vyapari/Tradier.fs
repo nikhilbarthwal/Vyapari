@@ -44,7 +44,7 @@ module Tradier =
                     let currentTime = Utils.CurrentTime()
                     Log.Info(tag, $"Starting session Id: {session} at {currentTime}")
                     let msg = $"[{tickers}], \"sessionid\": \"{session}\" ,"
-                    "{\"symbols\": " + msg + "\"linebreak\": true}"
+                    "{\"symbols\": " + msg + "\"linebreak\": false}"
                 else Log.Error(tag, $"Failed to get Session Id, Response: {text}")
             with
             | ex -> Log.Exception(tag, "Failed to get Session Id", ex)
@@ -59,11 +59,10 @@ module Tradier =
                         let timestamp = json.GetProperty("askdate").GetString()
                         let epoch: time = System.Int64.Parse(timestamp) / 1000L
                         let symbol = json.GetProperty("symbol").GetString()
-                        let get (key: string) =
-                            decimal <| json.GetProperty(key).GetDouble()
-                        { Ask = get "ask" ; Bid = get "bid"
-                          Time = epoch ; Volume = -1L }
-                        |> store.Insert tickers[symbol]
+                        let input: Data.Input<DataPoint> = store[tickers[symbol]]
+                        let get (key: string) = Utils.Normalize <| json.GetProperty(key).GetDouble()
+                        input.Insert({ Ask = get "ask" ; Bid = get "bid"
+                                       Time = epoch ; Volume = -1L })
                 with ex ->
                     Log.Warning(tag,
                         $"Unable to parse message {msg}, Exception: {ex.Message}")
@@ -77,20 +76,16 @@ module Tradier =
 
     type Client(tickers: Ticker list,
                 length: int,
-                buffer: Buffer<DataPoint>,
+                buffer: Data.Buffer<DataPoint>,
                 verbose: bool,
                 token: string) =
 
             let tag = "Tradier"
-            let mutable alive = true
-            let dataStore = Data.Store(tickers, length, buffer, verbose)
+            let dataStore = Data.Map(tickers, length, buffer, verbose)
             let adapter = Adapter(tag, dataStore, token)
             let connection = new Socket.Connection(adapter)
 
             interface Client<DataPoint> with
                 member this.DataSource: Data.Source<DataPoint> = dataStore
-                member this.IsAlive = alive
-                member this.AccountBalance() = 1000.0 // TODO: Fix this!
                 member this.Dispose() =
-                    alive <- false
                     let x: System.IDisposable = connection in x.Dispose()

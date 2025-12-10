@@ -56,7 +56,7 @@ module Buffer =
 
     let private equal (x: DataPoint) (y: DataPoint): bool = (x.Time = y.Time)
 
-    type private BufferTest(buffer: Buffer<DataPoint>) =
+    type private BufferTest(buffer: Data.Buffer<DataPoint>) =
         let mutable insertMap: Map<time, DataPoint list> = Map.empty
         let mutable resetMap: Map<time, DataPoint list> = Map.empty
         let resetData (bar: DataPoint): unit = Log.Info(tag, $"Reset Bar -> {bar}")
@@ -69,7 +69,7 @@ module Buffer =
             let key = batch b.Time
             if m.ContainsKey(key) then m[batch b.Time].Length = 1 else true
 
-        let queue = buffer.BufferQueue(insertData)
+        let queue = buffer.Queue(insertData)
 
         member this.Append(sample: DataPoint): bool =
             if queue.Ingest(sample) then

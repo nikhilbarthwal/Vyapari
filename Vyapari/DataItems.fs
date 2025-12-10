@@ -17,7 +17,7 @@ type DataPoint = { Ask: decimal; Bid: decimal; Time: time; Volume: int64} with
 
 module DataPoint =
 
-    let Array(length: int) = Data.Price<DataPoint>(length, DataPoint.Init)
+    let Array(length: int) = Data.Array<DataPoint>(length, DataPoint.Init)
 
     type Buffer(interval: time, bucketCount: int) =
         let adapter: LinearBuffer.Adapter<DataPoint> =
@@ -34,9 +34,9 @@ module DataPoint =
 
                 member this.Init() = DataPoint.Init() }
  
-        interface Buffer<DataPoint> with
-            member this.Initialize() = DataPoint.Init()
-            member this.BufferQueue(insert): BufferQueue<DataPoint> =
+        interface Data.Buffer<DataPoint> with
+            member this.Init() = DataPoint.Init()
+            member this.Queue(insert): Data.BufferQueue<DataPoint> =
                 LinearBuffer.Queue(adapter, insert)
 
 (*
