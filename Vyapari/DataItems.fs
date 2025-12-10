@@ -21,7 +21,7 @@ module DataPoint =
 
     type Buffer(interval: time, bucketCount: int) =
         let adapter: LinearBuffer.Adapter<DataPoint> =
-            { new LinearBuffer.Adapter<DataPoint> with 
+            { new LinearBuffer.Adapter<DataPoint> with
                 member this.BucketCount = bucketCount
                 member this.Interval = interval
                 member this.Merge r1 r2 x1 x2  time =
@@ -33,7 +33,7 @@ module DataPoint =
                       Volume = avgLong x1.Volume x2.Volume }
 
                 member this.Init() = DataPoint.Init() }
- 
+
         interface Data.Buffer<DataPoint> with
             member this.Init() = DataPoint.Init()
             member this.Queue(insert): Data.BufferQueue<DataPoint> =

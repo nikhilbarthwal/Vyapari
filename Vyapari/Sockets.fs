@@ -15,7 +15,7 @@ module Socket =
         abstract Tag: string
         abstract Close: (string -> unit) -> unit
 
-    type private Connect(z: Adapter, reconnect: int -> unit) =
+    type private Connect(z: Adapter, reconnect: int -> unit, timeout: int) =
 
         let send (cl: ClientWebSocket) (message: string) =
             if (cl.State = WebSocketState.Open) then
@@ -68,8 +68,11 @@ module Socket =
                 z.Close(this.Send)
                 client.CloseAsync(WebSocketCloseStatus.NormalClosure,
                                   "Client closing", CancellationToken.None).Wait()
+                Utils.Wait timeout
                 receiver.Join()
-                Log.Info(z.Tag, $"Closed Socket connection for {z.Url}")
+                if this.IsAlive then
+                    Log.Warning(z.Tag, $"Socket connection for {z.Url} still alive")
+                else Log.Info(z.Tag, $"Closed Socket connection for {z.Url}")
             with ex ->
                 Log.Warning(z.Tag, $"Failed to close connection for {z.Url}")
 
@@ -77,23 +80,27 @@ module Socket =
 
     type Connection(z: Adapter) =
 
-        let timeout = 5
+        let timeout = 15
         let maxReconnectAttempts = 3
 
         let mutable connection: Maybe<Connect> = No
 
         let rec reconnect attempt: unit =
+            match connection with
+            | Yes(conn) -> conn.Close()
+            | No -> ()
+
             if attempt > maxReconnectAttempts then
                 Log.Exception(z.Tag, $"Unable to reconnect to {z.Url}",
                               Exception("$Unable to reconnect to {z.Url}"))
             else
                 Log.Warning(z.Tag, $"Reconnecting to {z.Url}, Attempt {attempt}")
-                let conn = new Connect(z, reconnect)
-                Utils.Wait timeout
-                if conn.IsAlive then connection <- Yes(conn)
-                    else (reconnect <| attempt + 1)
+                let conn = new Connect(z, reconnect, timeout)
+                if conn.IsAlive then connection <- Yes(conn) else
+                    conn.Close()
+                    reconnect <| attempt + 1
 
-        do connection <- Yes(new Connect(z, reconnect))
+        do connection <- Yes(new Connect(z, reconnect, timeout))
 
         member this.Send(msg: string) =
             match connection with
