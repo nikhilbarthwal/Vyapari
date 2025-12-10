@@ -5,13 +5,11 @@ open Vyapari
 
 module LinearBuffer =
     
-    type Adapter<'T> =
+    type internal Adapter<'T> =
         abstract BucketCount: int
         abstract Interval: time
-        abstract Merge<'T>: int -> int -> 'T -> 'T -> 'T
+        abstract Merge<'T>: int -> int -> 'T -> 'T -> time -> 'T
         abstract Init<'T>: unit -> 'T
-        abstract Update<'T>: time -> 'T -> 'T
-        abstract Extrapolate: 'T -> 'T -> int -> time -> time -> int -> 'T
 
     
     module Bisect =
@@ -30,11 +28,9 @@ module LinearBuffer =
         member this.Data = assert (count > 0) ; data
         member this.Reset() = data <- adapter.Init() ; count <- 0
         member this.Count = count
-        member this.Add(x: 'T) =
-            printfn $"Bucket Insert {x} with Count {count}"
-            if count > 0 then (data <- adapter.Merge 1 count x data) else (data <- x)
+        member this.Add(x: 'T) (t: time) =
+            if count > 0 then (data <- adapter.Merge 1 count x data t) else (data <- x)
             count <- count + 1
-            printfn $"Bucket Insert {x} with Count {count} AFTER\n\n"
         static member Create(adapter: Adapter<'T>) (_:int) = Bucket(adapter)
 
     type private Buckets<'T when 'T :> Data<'T>>(adapter: Adapter<'T>) =
@@ -60,7 +56,6 @@ module LinearBuffer =
         let floor (t:time) = t - (t % (int64 adapter.Interval))
 
         let extrapolate (diff: int): unit =
-            printfn $"Extrapolate {diff}"
 #if DEBUG
             assert (diff > 0)
             assert (buckets[diff].Count = 1)
@@ -68,34 +63,26 @@ module LinearBuffer =
             if diff > 1 then
                 for k in [1 .. diff - 1] do assert(buckets[k].Count = 0)
 #endif
-            let eval = adapter.Extrapolate (buckets[diff].Data) (buckets[0].Data)
-                                            diff previous adapter.Interval
             for k in [0 .. diff - 1] do
-                let z = eval k
-                printfn $"Output is {z}"
-                output z
-            (* for k in [0 .. diff - 1] do
-                let z = adapter.Merge k (diff - k) (buckets[0].Data) (buckets[diff].Data)
-                printfn $"Output is {z}"
-                output <| adapter.Merge k (diff - k) (buckets[0].Data) (buckets[diff].Data) *)
+                previous + adapter.Interval * (int64 k)
+                |> adapter.Merge k (diff - k) (buckets[diff].Data) (buckets[0].Data)
+                |> output
 
         interface BufferQueue<'T> with
             member this.Ingest(input: 'T): bool =
                 let current = floor input.Time
                 if buckets[0].Count = 0 then // Initial case
-                    printfn $"Insert {input} with floor {current} INITIAL"
-                    buckets[0].Add input
+                    buckets[0].Add input current
                     previous <- current ; true
                 else
                     assert (input.Time >= buckets.Previous())
                     let diff = int <| (current - previous) / adapter.Interval
-                    printfn $"Insert {input} with floor {current} / Diff is {diff}"
                     if diff >= adapter.BucketCount then
                         buckets.Reset()
-                        buckets[0].Add input
+                        buckets[0].Add input current
                         previous <- current ; false
                     else
-                        buckets[diff].Add input
+                        buckets[diff].Add input current
                         if diff > 0 then
                             extrapolate diff
                             buckets.Shift(diff)

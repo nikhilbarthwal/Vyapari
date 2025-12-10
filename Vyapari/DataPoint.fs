@@ -26,17 +26,17 @@ module DataPoint =
             { new LinearBuffer.Adapter<DataPoint> with 
                 member this.BucketCount = bucketCount
                 member this.Interval = interval
-                member this.Merge r1 r2 x1 x2 =
+                member this.Merge r1 r2 x1 x2  time =
                     let avgDecimal = LinearBuffer.Bisect.Decimal r1 r2
                     let avgLong = LinearBuffer.Bisect.Long r1 r2
                     { Ask = avgDecimal x1.Ask x2.Ask
                       Bid = avgDecimal x1.Bid x2.Bid
-                      Time = avgLong x1.Time x2.Time
+                      Time = time
                       Volume = avgLong x1.Volume x2.Volume }
 
                 member this.Init() = DataPoint.Init()
-
-                member this.Update time x =
+(*
+                member this.Update x time =
                     { Ask = x.Ask ; Bid = x.Bid ; Time = time ; Volume = x.Volume }
                     
                 member this.Extrapolate (curr: DataPoint) (prev: DataPoint) (diff: int)
@@ -46,7 +46,7 @@ module DataPoint =
                     { Ask = extrapolateDecimal curr.Ask prev.Ask
                       Bid = extrapolateDecimal curr.Bid prev.Bid
                       Time = previous + interval * (int64 k)
-                      Volume = extrapolateLong curr.Volume prev.Volume }
+                      Volume = extrapolateLong curr.Volume prev.Volume } *)
             }
         
  
@@ -54,3 +54,16 @@ module DataPoint =
             member this.Initialize() = Init()
             member this.BufferQueue(insert): BufferQueue<DataPoint> =
                 LinearBuffer.Queue(adapter, insert)
+
+
+(*
+            let eval = adapter.Extrapolate (buckets[diff].Data) (buckets[0].Data)
+                                            diff previous adapter.Interval
+
+                                            k <| diff - k
+            for k in [0 .. diff - 1] do
+                let result = adapter.Merge k (diff - k) (buckets[0].Data) (buckets[diff].Data)
+                let t = previous + adapter.Interval * (int64 k)
+                let z = eval k
+                assert (t = z.Time)
+                *)
