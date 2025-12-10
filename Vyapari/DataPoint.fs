@@ -34,36 +34,9 @@ module DataPoint =
                       Time = time
                       Volume = avgLong x1.Volume x2.Volume }
 
-                member this.Init() = DataPoint.Init()
-(*
-                member this.Update x time =
-                    { Ask = x.Ask ; Bid = x.Bid ; Time = time ; Volume = x.Volume }
-                    
-                member this.Extrapolate (curr: DataPoint) (prev: DataPoint) (diff: int)
-                                          (previous: time) (interval: time) (k: int) =
-                    let extrapolateDecimal = LinearBuffer.Bisect.Decimal k <| diff - k
-                    let extrapolateLong = LinearBuffer.Bisect.Long k <| diff - k
-                    { Ask = extrapolateDecimal curr.Ask prev.Ask
-                      Bid = extrapolateDecimal curr.Bid prev.Bid
-                      Time = previous + interval * (int64 k)
-                      Volume = extrapolateLong curr.Volume prev.Volume } *)
-            }
-        
+                member this.Init() = DataPoint.Init() }
  
         interface Buffer<DataPoint> with
             member this.Initialize() = Init()
             member this.BufferQueue(insert): BufferQueue<DataPoint> =
                 LinearBuffer.Queue(adapter, insert)
-
-
-(*
-            let eval = adapter.Extrapolate (buckets[diff].Data) (buckets[0].Data)
-                                            diff previous adapter.Interval
-
-                                            k <| diff - k
-            for k in [0 .. diff - 1] do
-                let result = adapter.Merge k (diff - k) (buckets[0].Data) (buckets[diff].Data)
-                let t = previous + adapter.Interval * (int64 k)
-                let z = eval k
-                assert (t = z.Time)
-                *)
