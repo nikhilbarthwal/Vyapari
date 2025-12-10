@@ -4,14 +4,14 @@ open Vyapari
 
 
 module LinearBuffer =
-    
+
     type internal Adapter<'T> =
         abstract BucketCount: int
         abstract Interval: time
         abstract Merge<'T>: int -> int -> 'T -> 'T -> time -> 'T
         abstract Init<'T>: unit -> 'T
 
-    
+
     module Bisect =
         let inline internal Decimal (r1: int) (r2: int)
                                     (v1: decimal) (v2: decimal) =

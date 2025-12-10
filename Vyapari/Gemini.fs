@@ -49,7 +49,7 @@ module Gemini =
             | Yes(ask), Yes(bid) -> insert ask bid json
             | _ -> ()
 
-        interface Socket.Adapter with
+        interface Socket.Config with
 
             member this.Url: string =
                 $"wss://api.gemini.com/v1/marketdata/{symbol}USD"

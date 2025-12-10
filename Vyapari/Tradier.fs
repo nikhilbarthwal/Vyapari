@@ -67,7 +67,7 @@ module Tradier =
                     Log.Warning(tag,
                         $"Unable to parse message {msg}, Exception: {ex.Message}")
 
-        interface Socket.Adapter with
+        interface Socket.Config with
             member this.Url = wsUrl
             member this.Initialize(send) = payload() |> send
             member this.Receiver(msg, _) = receiver msg
