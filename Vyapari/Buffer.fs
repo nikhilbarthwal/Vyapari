@@ -5,7 +5,7 @@ open Vyapari
 
 module LinearBuffer =
 
-    type internal Adapter<'T> =
+    type internal Config<'T> =
         abstract BucketCount: int
         abstract Interval: time
         abstract Merge<'T>: int -> int -> 'T -> 'T -> time -> 'T
@@ -21,42 +21,42 @@ module LinearBuffer =
             (v1 * (int64 r1) + v2 * (int64 r2)) / (int64 <| r1 + r2)
 
 
-    type private Bucket<'T when 'T :> Data<'T>>(adapter: Adapter<'T>) =
-        let mutable data: 'T = adapter.Init()
+    type private Bucket<'T when 'T :> Data<'T>>(config: Config<'T>) =
+        let mutable data: 'T = config.Init()
         let mutable count = 0
 
         member this.Data = assert (count > 0) ; data
-        member this.Reset() = data <- adapter.Init() ; count <- 0
+        member this.Reset() = data <- config.Init() ; count <- 0
         member this.Count = count
         member this.Add(x: 'T) (t: time) =
             if count > 0 then
-                data <- adapter.Merge 1 count x data t
+                data <- config.Merge 1 count x data t
             else (data <- x)
             count <- count + 1
-        static member Create(adapter: Adapter<'T>) (_: int) = Bucket(adapter)
+        static member Create(config: Config<'T>) (_: int) = Bucket(config)
 
-    type private Buckets<'T when 'T :> Data<'T>>(adapter: Adapter<'T>) =
+    type private Buckets<'T when 'T :> Data<'T>>(config: Config<'T>) =
         let mutable pos = 0
-        let buckets = Array.Initialize(adapter.BucketCount, Bucket.Create(adapter))
-        let index k = (pos + k) % adapter.BucketCount
-        do assert (adapter.BucketCount > 1)
+        let buckets = Array.Initialize(config.BucketCount, Bucket.Create(config))
+        let index k = (pos + k) % config.BucketCount
+        do assert (config.BucketCount > 1)
 
         member this.Item with get(k: int) = buckets[index(k)]
         member this.Previous() = buckets[pos].Data.Time
         member this.Shift(k) =
             assert (k > 0)
             for i in [1 .. k] do buckets[index <| i-1].Reset()
-            pos <- (pos + k) % adapter.BucketCount
+            pos <- (pos + k) % config.BucketCount
 
         member this.Reset() =
-            pos <- 0 ; for i in [0 .. adapter.BucketCount - 1] do buckets[i].Reset()
+            pos <- 0 ; for i in [0 .. config.BucketCount - 1] do buckets[i].Reset()
 
-    type internal Queue<'T when 'T :> Data<'T>>(adapter: Adapter<'T>,
+    type internal Queue<'T when 'T :> Data<'T>>(config: Config<'T>,
                                                 output: 'T -> unit) =
 
-        let buckets = Buckets(adapter)
+        let buckets = Buckets(config)
         let mutable previous: time = 0L
-        let floor (t:time) = t - (t % (int64 adapter.Interval))
+        let floor (t: time) = t - (t % (int64 config.Interval))
 
         let extrapolate (diff: int): unit =
 #if DEBUG
@@ -67,8 +67,8 @@ module LinearBuffer =
                 for k in [1 .. diff - 1] do assert(buckets[k].Count = 0)
 #endif
             for k in [0 .. diff - 1] do
-                previous + adapter.Interval * (int64 k)
-                |> adapter.Merge k (diff - k) (buckets[diff].Data) (buckets[0].Data)
+                previous + config.Interval * (int64 k)
+                |> config.Merge k (diff - k) (buckets[diff].Data) (buckets[0].Data)
                 |> output
 
         interface Data.BufferQueue<'T> with
@@ -79,8 +79,8 @@ module LinearBuffer =
                     previous <- current ; true
                 else
                     assert (input.Time >= buckets.Previous())
-                    let diff = int <| (current - previous) / adapter.Interval
-                    if diff >= adapter.BucketCount then
+                    let diff = int <| (current - previous) / config.Interval
+                    if diff >= config.BucketCount then
                         buckets.Reset()
                         buckets[0].Add input current
                         previous <- current ; false

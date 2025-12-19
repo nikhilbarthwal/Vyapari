@@ -82,8 +82,8 @@ module Tradier =
 
             let tag = "Tradier"
             let dataStore = Data.Map(tickers, length, buffer, verbose)
-            let adapter = Adapter(tag, dataStore, token)
-            let connection = new Socket.Connection(adapter)
+            let config = Adapter(tag, dataStore, token)
+            let connection = new Socket.Connection(config)
 
             interface Client<DataPoint> with
                 member this.DataSource: Data.Source<DataPoint> = dataStore
