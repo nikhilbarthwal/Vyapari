@@ -9,15 +9,21 @@ type Data<'T when 'T :> Data<'T>> = abstract member Price: decimal
 module Data =
 
     type Array<'T when 'T :> Data<'T>>(length: int, f: unit -> 'T) =
-        let data = Array.Buffer(length, fun _ -> f())
-        member inline internal this.Update(get: int -> 'T) = data.Overwrite(get)
-        member inline internal this.Item
-            with get(index: int) =  data[index]
-            and set(index: int) (value: 'T) = data[index] <- value
-        interface Vyapari.Array<'T> with
-            member this.Item(index: int) = data[index]
-            member this.Length = length
-            member this.Get(index) = data.Get(index)
+        let data = [| for _ in 1 .. length -> f() |]
+        member inline internal this.Overwrite(get: int -> 'T) =
+            for i in 0 .. length - 1 do data[i] <- get i
+
+        interface Generic.IReadOnlyList<'T> with
+            member this.Count = data.Length
+            member this.Item
+                with get index =
+                    if index < 0 || index >= data.Length then
+                        raise (System.IndexOutOfRangeException())
+                    data[index]
+
+            member this.GetEnumerator() = (data :> seq<'T>).GetEnumerator()
+            member this.GetEnumerator() = (data :> IEnumerable).GetEnumerator()
+
 
     type BufferQueue<'T when 'T :> Data<'T>> = abstract member Ingest: 'T -> bool
 
@@ -44,10 +50,11 @@ module Data =
 
     type private RingBuffer<'T when 'T :> Data<'T>>
             (ticker: Ticker, length: int, buffer: Buffer<'T>, verbose: bool) =
+
         let mutable pos: int = 0
         let mutable count: int = 0
 
-        let data = Array(length, fun _ -> buffer.Init())
+        let data = [| for _ in 1 .. length -> buffer.Init() |]
         let get i = let k = (length + pos - i - 1) % length in data[k]
 
         let insert(x: 'T): unit = data[pos] <- x ; count <- count + 1
@@ -63,7 +70,7 @@ module Data =
             if (not <| queue.Ingest(x)) then this.Reset()
 
         member inline this.Get(l: Array<'T>): bool =
-                    if count < length then false else (l.Update(get) ; true)
+                    if count < length then false else (l.Overwrite(get) ; true)
 
         interface Input<'T> with member this.Insert(x: 'T) = this.Insert(x)
         interface Output<'T> with member this.Get(l) = this.Get(l)

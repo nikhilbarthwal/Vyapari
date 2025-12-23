@@ -1,5 +1,6 @@
 namespace Vyapari.Tests
 
+open System.Collections.Generic
 open NUnit.Framework
 open Vyapari
 
@@ -31,7 +32,7 @@ module Ingestion =
 
     let private verify (source: Data.Source<DataPoint>) (tag: string)
                        (interval: time) (length: int) (ticker: Ticker): bool =
-        let check (x: Array<DataPoint>) (i: int): bool =
+        let check (x: IReadOnlyList<DataPoint>) (i: int): bool =
             let diff: time = x[i-1].Time - x[i].Time
             if diff = interval then true else
                 let m = $"Diff = {diff} <> interval = {interval} at {i} for {ticker}"

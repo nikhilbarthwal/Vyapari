@@ -1,5 +1,6 @@
 namespace Vyapari
 
+open System.Collections.Generic
 open Vyapari
 
 
@@ -33,11 +34,11 @@ module LinearBuffer =
                 data <- config.Merge 1 count x data t
             else (data <- x)
             count <- count + 1
-        static member Create(config: Config<'T>) (_: int) = Bucket(config)
 
     type private Buckets<'T when 'T :> Data<'T>>(config: Config<'T>) =
         let mutable pos = 0
-        let buckets = Array.Initialize(config.BucketCount, Bucket.Create(config))
+        let buckets: IReadOnlyList<Bucket<'T>> =
+            [| for _ in 1 .. config.BucketCount -> Bucket(config) |]
         let index k = (pos + k) % config.BucketCount
         do assert (config.BucketCount > 1)
 
