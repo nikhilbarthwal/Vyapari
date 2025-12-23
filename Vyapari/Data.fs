@@ -49,28 +49,30 @@ module Data =
 
 
     type private RingBuffer<'T when 'T :> Data<'T>>
-            (ticker: Ticker, length: int, buffer: Buffer<'T>, verbose: bool) =
+            (ticker: Ticker, length: int, buffer: Buffer<'T>) =
 
         let mutable pos: int = 0
         let mutable count: int = 0
+        let object = System.Object()
 
         let data = [| for _ in 1 .. length -> buffer.Init() |]
         let get i = let k = (length + pos - i - 1) % length in data[k]
 
-        let insert(x: 'T): unit = data[pos] <- x ; count <- count + 1
-                                  pos <- pos + 1 ; if pos = length then pos <- 0
+        let insert(x: 'T) (): unit = data[pos] <- x ; count <- count + 1
+                                     pos <- pos + 1 ; if pos = length then pos <- 0
 
-        let queue = buffer.Queue(insert)
+        let queue = let ingest(x) = lock object (insert x) in buffer.Queue(ingest)
 
-        member inline internal this.Reset() =
-            if verbose then Log.Info("Data", $"Reset for {ticker}")
-            count <- 0 ; pos <- 0
+        let reset() = count <- 0 ; pos <- 0
+
+        member inline internal this.Reset() = lock object reset
 
         member inline internal this.Insert(x: 'T) =
             if (not <| queue.Ingest(x)) then this.Reset()
 
         member inline this.Get(l: Array<'T>): bool =
-                    if count < length then false else (l.Overwrite(get) ; true)
+            if count < length then false else
+                lock object (fun _ -> l.Overwrite(get)) ; true
 
         interface Input<'T> with member this.Insert(x: 'T) = this.Insert(x)
         interface Output<'T> with member this.Get(l) = this.Get(l)
