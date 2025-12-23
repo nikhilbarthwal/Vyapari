@@ -52,14 +52,13 @@ module LinearBuffer =
         member this.Reset() =
             pos <- 0 ; for i in [0 .. config.BucketCount - 1] do buckets[i].Reset()
 
-    type internal Queue<'T when 'T :> Data<'T>>(config: Config<'T>,
-                                                output: 'T -> unit) =
+    type internal Queue<'T when 'T :> Data<'T>>(config, output) =
 
         let buckets = Buckets(config)
         let mutable previous: time = 0L
         let floor (t: time) = t - (t % (int64 config.Interval))
 
-        let insert (x: 'T') = // TODO: Final Data to be printer here
+        let insert (x: 'T'): unit = // TODO: Final Data to be printer here
             output x
 
         let extrapolate (diff: int): unit =
