@@ -61,7 +61,8 @@ module Data =
         let insert(x: 'T) (): unit = data[pos] <- x ; count <- count + 1
                                      pos <- pos + 1 ; if pos = length then pos <- 0
 
-        let queue = let ingest(x) = lock object (insert x) in buffer.Queue(ingest)
+        let queue =
+            let ingest(x) = lock object (insert x) in buffer.Queue(ingest)
 
         let reset() = count <- 0 ; pos <- 0
 

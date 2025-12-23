@@ -59,6 +59,9 @@ module LinearBuffer =
         let mutable previous: time = 0L
         let floor (t: time) = t - (t % (int64 config.Interval))
 
+        let insert (x: 'T') = // TODO: Final Data to be printer here
+            output x
+
         let extrapolate (diff: int): unit =
 #if DEBUG
             assert (diff > 0)
@@ -70,10 +73,11 @@ module LinearBuffer =
             for k in [0 .. diff - 1] do
                 previous + config.Interval * (int64 k)
                 |> config.Merge k (diff - k) (buckets[diff].Data) (buckets[0].Data)
-                |> output
+                |> insert
 
         interface Data.BufferQueue<'T> with
             member this.Ingest(input: 'T): bool =
+                 // TODO: Raw Data to be printer here
                 let current = floor input.Time
                 if buckets[0].Count = 0 then // Initial case
                     buckets[0].Add input current
