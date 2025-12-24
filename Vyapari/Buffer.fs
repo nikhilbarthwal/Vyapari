@@ -1,5 +1,6 @@
 namespace Vyapari
 
+open System.Collections.Generic
 open Vyapari
 
 
@@ -8,6 +9,7 @@ module LinearBuffer =
     type internal Config<'T> =
         abstract BucketCount: int
         abstract Interval: time
+        abstract Verbosity: Data.Buffer.Verbosity
         abstract Merge<'T>: int -> int -> 'T -> 'T -> time -> 'T
         abstract Init<'T>: unit -> 'T
 
@@ -33,11 +35,11 @@ module LinearBuffer =
                 data <- config.Merge 1 count x data t
             else (data <- x)
             count <- count + 1
-        static member Create(config: Config<'T>) (_: int) = Bucket(config)
 
     type private Buckets<'T when 'T :> Data<'T>>(config: Config<'T>) =
         let mutable pos = 0
-        let buckets = Array.Initialize(config.BucketCount, Bucket.Create(config))
+        let buckets: IReadOnlyList<Bucket<'T>> =
+            [| for _ in 1 .. config.BucketCount -> Bucket(config) |]
         let index k = (pos + k) % config.BucketCount
         do assert (config.BucketCount > 1)
 
@@ -51,12 +53,16 @@ module LinearBuffer =
         member this.Reset() =
             pos <- 0 ; for i in [0 .. config.BucketCount - 1] do buckets[i].Reset()
 
-    type internal Queue<'T when 'T :> Data<'T>>(config: Config<'T>,
-                                                output: 'T -> unit) =
+    type internal Queue<'T when 'T :> Data<'T>>(ticker: Ticker, config, output) =
 
         let buckets = Buckets(config)
         let mutable previous: time = 0L
         let floor (t: time) = t - (t % (int64 config.Interval))
+
+        let insert (x: 'T): unit =
+            if config.Verbosity <> Data.Buffer.Verbosity.Final then
+               Log.Info("LinearBuffer", $"Ticker = {ticker} -> Final Data = {x}")
+            output x
 
         let extrapolate (diff: int): unit =
 #if DEBUG
@@ -69,23 +75,26 @@ module LinearBuffer =
             for k in [0 .. diff - 1] do
                 previous + config.Interval * (int64 k)
                 |> config.Merge k (diff - k) (buckets[diff].Data) (buckets[0].Data)
-                |> output
+                |> insert
 
-        interface Data.BufferQueue<'T> with
-            member this.Ingest(input: 'T): bool =
-                let current = floor input.Time
+        interface Data.Buffer.Queue<'T> with
+            member this.Ingest(x: 'T): bool =
+                if config.Verbosity <> Data.Buffer.Verbosity.Final then
+                    Log.Info("LinearBuffer", $"Ticker = {ticker} -> Raw Data = {x}")
+
+                let current = floor x.Time
                 if buckets[0].Count = 0 then // Initial case
-                    buckets[0].Add input current
+                    buckets[0].Add x current
                     previous <- current ; true
                 else
-                    assert (input.Time >= buckets.Previous())
+                    assert (x.Time >= buckets.Previous())
                     let diff = int <| (current - previous) / config.Interval
                     if diff >= config.BucketCount then
                         buckets.Reset()
-                        buckets[0].Add input current
+                        buckets[0].Add x current
                         previous <- current ; false
                     else
-                        buckets[diff].Add input current
+                        buckets[diff].Add x current
                         if diff > 0 then
                             extrapolate diff
                             buckets.Shift(diff)

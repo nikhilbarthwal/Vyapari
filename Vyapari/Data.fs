@@ -9,20 +9,24 @@ type Data<'T when 'T :> Data<'T>> = abstract member Price: decimal
 module Data =
 
     type Array<'T when 'T :> Data<'T>>(length: int, f: unit -> 'T) =
-        let data = Array.Buffer(length, fun _ -> f())
-        member inline internal this.Update(get: int -> 'T) = data.Overwrite(get)
-        member inline internal this.Item
-            with get(index: int) =  data[index]
-            and set(index: int) (value: 'T) = data[index] <- value
-        interface Vyapari.Array<'T> with
-            member this.Item(index: int) = data[index]
-            member this.Length = length
-            member this.Get(index) = data.Get(index)
+        let data = [| for _ in 1 .. length -> f() |]
+        member inline internal this.Overwrite(get: int -> 'T) =
+            for i in 0 .. length - 1 do data[i] <- get i
 
-    type BufferQueue<'T when 'T :> Data<'T>> = abstract member Ingest: 'T -> bool
+        interface Generic.IReadOnlyList<'T> with
+            member this.Count = data.Length
+            member this.Item with get index = data[index]
+
+            member this.GetEnumerator() = (data :> seq<'T>).GetEnumerator()
+            member this.GetEnumerator() = (data :> IEnumerable).GetEnumerator()
+
+
+    module Buffer =
+        [<Struct>] type Verbosity = Raw | Final | All
+        type Queue<'T when 'T :> Data<'T>> = abstract member Ingest: 'T -> bool
 
     type Buffer<'T when 'T :> Data<'T>> =
-        abstract member Queue: ('T -> unit) -> BufferQueue<'T>
+        abstract member CreateQueue: Ticker * ('T -> unit) -> Buffer.Queue<'T>
         abstract member Init: unit -> 'T
 
     type Input<'T when 'T :> Data<'T>> =
@@ -43,38 +47,41 @@ module Data =
 
 
     type private RingBuffer<'T when 'T :> Data<'T>>
-            (ticker: Ticker, length: int, buffer: Buffer<'T>, verbose: bool) =
+            (ticker: Ticker, length, buffer: Buffer<'T>) =
         let mutable pos: int = 0
         let mutable count: int = 0
+        let object = System.Object()
 
-        let data = Array(length, fun _ -> buffer.Init())
+        let data = [| for _ in 1 .. length -> buffer.Init() |]
         let get i = let k = (length + pos - i - 1) % length in data[k]
 
-        let insert(x: 'T): unit = data[pos] <- x ; count <- count + 1
-                                  pos <- pos + 1 ; if pos = length then pos <- 0
-
-        let queue = buffer.Queue(insert)
+        let queue: Buffer.Queue<'T> =
+            let insert(x: 'T) () = data[pos] <- x ; count <- count + 1
+                                   pos <- pos + 1 ; if pos = length then pos <- 0
+            let ingest x = lock object (insert x)
+            buffer.CreateQueue(ticker, ingest)
 
         member inline internal this.Reset() =
-            if verbose then Log.Info("Data", $"Reset for {ticker}")
-            count <- 0 ; pos <- 0
+            let reset() = (count <- 0 ; pos <- 0) in (lock object reset)
 
         member inline internal this.Insert(x: 'T) =
             if (not <| queue.Ingest(x)) then this.Reset()
 
         member inline this.Get(l: Array<'T>): bool =
-                    if count < length then false else (l.Update(get) ; true)
+            if count < length then false else
+                lock object (fun _ -> l.Overwrite(get)) ; true
 
         interface Input<'T> with member this.Insert(x: 'T) = this.Insert(x)
         interface Output<'T> with member this.Get(l) = this.Get(l)
 
 
     type Map<'T when 'T :> Data<'T>>
-            (tickers: Ticker list, length: int, buffer: Buffer<'T>, verbose: bool) =
+            (tickers: Ticker list, length: int, buffer: Buffer<'T>) =
+
         let dataMap: Generic.IReadOnlyDictionary<Ticker, RingBuffer<'T>> =
             let data = Concurrent.ConcurrentDictionary<Ticker, RingBuffer<'T>>()
-            for t in tickers do
-                let b = data.TryAdd(t, RingBuffer(t, length, buffer, verbose))
+            for ticker in tickers do
+                let b = data.TryAdd(ticker, RingBuffer(ticker, length, buffer))
                 assert b
             data
 

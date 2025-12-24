@@ -2,7 +2,7 @@ namespace Vyapari
 
 
 [<Struct>]
-type DataPoint = { Ask: decimal; Bid: decimal; Time: time; Volume: int64} with
+type DataPoint = { Ask: decimal ; Bid: decimal ; Time: time ; Volume: int64 } with
     member this.Timestamp = Utils.ToDateTime(this.Time)
     member this.Price = (this.Ask + this.Bid) / 2m
     override this.ToString() =
@@ -10,6 +10,7 @@ type DataPoint = { Ask: decimal; Bid: decimal; Time: time; Volume: int64} with
          $"Ask: {this.Bid} / Bid: {this.Ask} / Timestamp: {ts} / Epoch: {this.Time}"
 
     static member Init() = { Ask = 0m ; Bid = 0m ; Time = 0L ; Volume = 0L }
+
     interface Data<DataPoint> with
         member this.Price = this.Price
         member this.Time = this.Time
@@ -19,11 +20,12 @@ module DataPoint =
 
     let Array(length: int) = Data.Array<DataPoint>(length, DataPoint.Init)
 
-    type Buffer(interval: time, bucketCount: int) =
+    type Buffer(interval: time, bucketCount: int, verbosity: Data.Buffer.Verbosity) =
         let config: LinearBuffer.Config<DataPoint> =
             { new LinearBuffer.Config<DataPoint> with
                 member this.BucketCount = bucketCount
                 member this.Interval = interval
+                member this.Verbosity: Data.Buffer.Verbosity = verbosity
                 member this.Merge r1 r2 x1 x2  time =
                     let avgDecimal = LinearBuffer.Bisect.Decimal r1 r2
                     let avgLong = LinearBuffer.Bisect.Long r1 r2
@@ -36,8 +38,9 @@ module DataPoint =
 
         interface Data.Buffer<DataPoint> with
             member this.Init() = DataPoint.Init()
-            member this.Queue(insert): Data.BufferQueue<DataPoint> =
-                LinearBuffer.Queue(config, insert)
+            member this.CreateQueue(ticker: Ticker, insert: DataPoint -> unit):
+                    Data.Buffer.Queue<DataPoint> =
+                LinearBuffer.Queue(ticker, config, insert)
 
 (*
     [<Struct>]

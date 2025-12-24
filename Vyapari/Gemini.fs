@@ -7,7 +7,7 @@ module Gemini =
 
     type private Parser(symbol: string, delta: decimal, insert: DataPoint -> unit) =
 
-        let tag: string = $"Gemini[{symbol}]"
+        let tag: string = $"Gemini #{symbol}"
         let mutable bestAsk: Maybe<decimal> = No
         let mutable bestBid: Maybe<decimal> = No
 
@@ -65,10 +65,9 @@ module Gemini =
     type Connection(tickers: Ticker list,
                     length: int,
                     buffer: Data.Buffer<DataPoint>,
-                    verbose: bool,
                     AskBidDelta: decimal) =
 
-        let data = Data.Map(tickers, length, buffer, verbose)
+        let data = Data.Map(tickers, length, buffer)
         let store: Data.Store<DataPoint> = data
 
         let parser (ticker: Ticker): Parser option =

@@ -1,7 +1,7 @@
 namespace Vyapari
 
 
-type Strategy = abstract Eval: float -> Maybe<Order>
+// type Strategy = abstract Eval: float -> Maybe<Order>
 
 
 type Client<'T when 'T :> Data<'T>> =
