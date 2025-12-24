@@ -50,8 +50,8 @@ module Ingestion =
     [<Test>]
     let Ingestion() =
         let tag, interval, size, tickers = tag(), interval(), size(), tickers()
-        let buffer = DataPoint.Buffer(interval, buckets())
-        let data = Data.Map(tickers, size, buffer, false)
+        let buffer = DataPoint.Buffer(interval, buckets(), Data.Buffer.All)
+        let data = Data.Map(tickers, size, buffer)
         let store: Data.Store<DataPoint> = data
         for ticker, bar in genDataPoints(tickers, interval, size) do
             store[ticker].Insert bar

@@ -15,7 +15,8 @@ module Buffer =
         let random = System.Random(System.Guid.NewGuid().GetHashCode())
 
         let init =
-            let x = int64 <| 100000.0 * (1.0 + random.NextDouble()) in x - (x % interval)
+            let x = int64 <| 100000.0 * (1.0 + random.NextDouble())
+            x - (x % interval)
 
         let batch (previous: time, times: time list list) (n:int) =
             let pos = int64 n
@@ -23,7 +24,8 @@ module Buffer =
             let stop = if n = buckets then start else (previous + interval - 1L)
             previous + interval * (pos + 1L), [start .. stop]::times
 
-        let timelines = [0 .. buckets] |> List.fold batch (init, []) |> snd |> List.rev
+        let timelines =
+            [0 .. buckets] |> List.fold batch (init, []) |> snd |> List.rev
 
         timelines |> List.concat |> List.map (Utils.Bar random)
 
@@ -69,7 +71,7 @@ module Buffer =
             let key = batch b.Time
             if m.ContainsKey(key) then m[batch b.Time].Length = 1 else true
 
-        let queue = buffer.Queue(insertData)
+        let queue = buffer.CreateQueue(Stock("TEST"), insertData)
 
         member this.Append(sample: DataPoint): bool =
             if queue.Ingest(sample) then
@@ -88,7 +90,8 @@ module Buffer =
 
     let private verify (samples: DataPoint list): bool =
 
-        let buffer = BufferTest <| DataPoint.Buffer(interval, buckets)
+        let buffer =
+            BufferTest <| DataPoint.Buffer(interval, buckets, Utils.Verbosity)
         let combine = combine(samples)
 
         let check (x: DataPoint) (current: time) (previous: time): bool =

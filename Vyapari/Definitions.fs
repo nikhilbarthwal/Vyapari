@@ -27,15 +27,3 @@ type Ticker =
             | Stock(symbol) -> symbol
             | Option(symbol, _, _, _) -> symbol
             | Crypto(symbol) -> symbol
-
-
-// [<Struct>] TODO: Should this be struct?
-type Order =
-    | OTOCO of ticker: Ticker * quantity: int * price: Decimal *
-                       profit: Decimal * loss: Decimal
-    with
-    override this.ToString() =
-        match this with
-        | OTOCO(ticker, quantity, price, profit, loss) ->
-            $"Order -> Ticker: {ticker} / Quantity: {quantity} / Price: " +
-            $"{price} / ProfitPrice: {profit} / LossPrice: {loss}"

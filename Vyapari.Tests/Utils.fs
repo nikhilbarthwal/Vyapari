@@ -17,3 +17,5 @@ module Utils =
     let Gen (length: int) (min: int, max: int): IReadOnlyList<int> =
         let random = System.Random(System.Guid.NewGuid().GetHashCode())
         [| for _ in 1 .. length -> random.Next(min, max) |]
+
+    let Verbosity: Data.Buffer.Verbosity = Data.Buffer.Verbosity.All

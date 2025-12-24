@@ -77,11 +77,10 @@ module Tradier =
     type Client(tickers: Ticker list,
                 length: int,
                 buffer: Data.Buffer<DataPoint>,
-                verbose: bool,
                 token: string) =
 
             let tag = "Tradier"
-            let dataStore = Data.Map(tickers, length, buffer, verbose)
+            let dataStore = Data.Map(tickers, length, buffer)
             let config = Adapter(tag, dataStore, token)
             let connection = new Socket.Connection(config)
 

@@ -15,20 +15,18 @@ module Data =
 
         interface Generic.IReadOnlyList<'T> with
             member this.Count = data.Length
-            member this.Item
-                with get index =
-                    if index < 0 || index >= data.Length then
-                        raise (System.IndexOutOfRangeException())
-                    data[index]
+            member this.Item with get index = data[index]
 
             member this.GetEnumerator() = (data :> seq<'T>).GetEnumerator()
             member this.GetEnumerator() = (data :> IEnumerable).GetEnumerator()
 
 
-    type BufferQueue<'T when 'T :> Data<'T>> = abstract member Ingest: 'T -> bool
+    module Buffer =
+        [<Struct>] type Verbosity = Raw | Final | All
+        type Queue<'T when 'T :> Data<'T>> = abstract member Ingest: 'T -> bool
 
     type Buffer<'T when 'T :> Data<'T>> =
-        abstract member Queue: ('T -> unit) -> BufferQueue<'T>
+        abstract member CreateQueue: Ticker * ('T -> unit) -> Buffer.Queue<'T>
         abstract member Init: unit -> 'T
 
     type Input<'T when 'T :> Data<'T>> =
@@ -49,8 +47,7 @@ module Data =
 
 
     type private RingBuffer<'T when 'T :> Data<'T>>
-            (ticker: Ticker, length: int, buffer: Buffer<'T>) =
-
+            (ticker: Ticker, length, buffer: Buffer<'T>) =
         let mutable pos: int = 0
         let mutable count: int = 0
         let object = System.Object()
@@ -58,15 +55,14 @@ module Data =
         let data = [| for _ in 1 .. length -> buffer.Init() |]
         let get i = let k = (length + pos - i - 1) % length in data[k]
 
-        let insert(x: 'T) (): unit = data[pos] <- x ; count <- count + 1
-                                     pos <- pos + 1 ; if pos = length then pos <- 0
+        let queue: Buffer.Queue<'T> =
+            let insert(x: 'T) () = data[pos] <- x ; count <- count + 1
+                                   pos <- pos + 1 ; if pos = length then pos <- 0
+            let ingest x = lock object (insert x)
+            buffer.CreateQueue(ticker, ingest)
 
-        let queue =
-            let ingest(x) = lock object (insert x) in buffer.Queue(ingest)
-
-        let reset() = count <- 0 ; pos <- 0
-
-        member inline internal this.Reset() = lock object reset
+        member inline internal this.Reset() =
+            let reset() = (count <- 0 ; pos <- 0) in (lock object reset)
 
         member inline internal this.Insert(x: 'T) =
             if (not <| queue.Ingest(x)) then this.Reset()
@@ -80,11 +76,12 @@ module Data =
 
 
     type Map<'T when 'T :> Data<'T>>
-            (tickers: Ticker list, length: int, buffer: Buffer<'T>, verbose: bool) =
+            (tickers: Ticker list, length: int, buffer: Buffer<'T>) =
+
         let dataMap: Generic.IReadOnlyDictionary<Ticker, RingBuffer<'T>> =
             let data = Concurrent.ConcurrentDictionary<Ticker, RingBuffer<'T>>()
-            for t in tickers do
-                let b = data.TryAdd(t, RingBuffer(t, length, buffer, verbose))
+            for ticker in tickers do
+                let b = data.TryAdd(ticker, RingBuffer(ticker, length, buffer))
                 assert b
             data
 
