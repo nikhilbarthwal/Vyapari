@@ -16,7 +16,7 @@
         <Compile Include="Data.fs" />
         <Compile Include="Buffer.fs" />
         <Compile Include="DataItems.fs" />
-        <Compile Include="Sockets.fs" />
+        <Compile Include="WebSocket.fs" />
         <Compile Include="Execution.fs" />
         <Compile Include="Gemini.fs" />
         <Compile Include="Tradier.fs" />

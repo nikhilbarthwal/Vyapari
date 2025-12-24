@@ -60,4 +60,4 @@ module Log =
         logger.Entry "ERROR" (tag, msg) ; raise <| Exception(msg)
 
     let Exception(tag, msg, ex: exn) =
-        logger.Entry "EXCEPTION" (tag, msg) ; raise <| Exception(msg, ex)
+        logger.Entry "EXCEPTION" (tag, msg) ; raise <| ex

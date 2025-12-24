@@ -7,7 +7,6 @@ module Gemini =
 
     type private Parser(symbol: string, delta: decimal, insert: DataPoint -> unit) =
 
-        let tag: string = $"Gemini #{symbol}"
         let mutable bestAsk: Maybe<decimal> = No
         let mutable bestBid: Maybe<decimal> = No
 
@@ -49,17 +48,17 @@ module Gemini =
             | Yes(ask), Yes(bid) -> insert ask bid json
             | _ -> ()
 
-        interface Socket.Config with
+        interface WebSocket.Config with
 
             member this.Url: string =
                 $"wss://api.gemini.com/v1/marketdata/{symbol}USD"
 
             member this.Initialize _ = ()
-            member this.Tag: string = tag
             member this.Close _ = ()
             member this.Receiver(message: string, _): unit =
-                try (parse message) with e ->
-                    Log.Error(tag, $"Unable to parse {message} -> {e.Message}")
+                try (parse message) with (ex: exn) ->
+                    Log.Exception($"Gemini [{symbol}]",
+                                  $"Unable to parse {message} -> {ex.Message}", ex)
 
 
     type Connection(tickers: Ticker list,
@@ -77,7 +76,7 @@ module Gemini =
             | x ->
                 Log.Warning("Gemini", $"Gemini does not support {x}") ; None
 
-        let connection parser: System.IDisposable = new Socket.Connection(parser)
+        let connection parser: System.IDisposable = new WebSocket.Connection(parser)
         let parsers = List.choose parser tickers
         let connections = Utils.CreateDictionary(parsers, connection)
 

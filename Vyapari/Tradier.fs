@@ -7,9 +7,9 @@ open System.Net.Http
 
 module Tradier =
 
-    type private Adapter(tag: string, store: Data.Store<DataPoint>, token: string) =
+    type private Config(store: Data.Store<DataPoint>, token: string) =
 
-
+        let tag = "Tradier"
         let wsUrl = "wss://ws.tradier.com/v1/markets/events"
 
         let ticker2symbol (m: Map<string, Ticker>) (ticker: Ticker) =
@@ -67,11 +67,10 @@ module Tradier =
                     Log.Warning(tag,
                         $"Unable to parse message {msg}, Exception: {ex.Message}")
 
-        interface Socket.Config with
+        interface WebSocket.Config with
             member this.Url = wsUrl
             member this.Initialize(send) = payload() |> send
             member this.Receiver(msg, _) = receiver msg
-            member this.Tag: string = tag
             member this.Close _ = ()
 
     type Client(tickers: Ticker list,
@@ -79,10 +78,8 @@ module Tradier =
                 buffer: Data.Buffer<DataPoint>,
                 token: string) =
 
-            let tag = "Tradier"
             let dataStore = Data.Map(tickers, length, buffer)
-            let config = Adapter(tag, dataStore, token)
-            let connection = new Socket.Connection(config)
+            let connection = new WebSocket.Connection(Config(dataStore, token))
 
             interface Client<DataPoint> with
                 member this.DataSource: Data.Source<DataPoint> = dataStore
