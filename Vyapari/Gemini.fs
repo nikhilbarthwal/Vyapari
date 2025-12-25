@@ -66,7 +66,7 @@ module Gemini =
                     buffer: Data.Buffer<DataPoint>,
                     AskBidDelta: decimal) =
 
-        let data = Data.Map(tickers, length, buffer)
+        let data = DataPoint.Map(tickers, length, buffer)
         let store: Data.Store<DataPoint> = data
 
         let parser (ticker: Ticker): Parser option =

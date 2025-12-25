@@ -20,6 +20,9 @@ module DataPoint =
 
     let Array(length: int) = Data.Array<DataPoint>(length, DataPoint.Init)
 
+    let Map(tickers: Ticker list, length: int, buffer: Data.Buffer<DataPoint>) =
+        Data.Map<DataPoint>(tickers, length, buffer, DataPoint.Init)
+
     type Buffer(interval: time, bucketCount: int, verbosity: Data.Buffer.Verbosity) =
         let config: LinearBuffer.Config<DataPoint> =
             { new LinearBuffer.Config<DataPoint> with
@@ -37,7 +40,6 @@ module DataPoint =
                 member this.Init() = DataPoint.Init() }
 
         interface Data.Buffer<DataPoint> with
-            member this.Init() = DataPoint.Init()
             member this.CreateQueue(ticker: Ticker, insert: DataPoint -> unit):
                     Data.Buffer.Queue<DataPoint> =
                 LinearBuffer.Queue(ticker, config, insert)

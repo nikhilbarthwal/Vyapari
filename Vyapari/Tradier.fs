@@ -60,7 +60,8 @@ module Tradier =
                         let epoch: time = System.Int64.Parse(timestamp) / 1000L
                         let symbol = json.GetProperty("symbol").GetString()
                         let input: Data.Input<DataPoint> = store[tickers[symbol]]
-                        let get (key: string) = Utils.Normalize <| json.GetProperty(key).GetDouble()
+                        let get (key: string) = json.GetProperty(key).GetDouble()
+                                                |> Utils.Normalize
                         input.Insert({ Ask = get "ask" ; Bid = get "bid"
                                        Time = epoch ; Volume = -1L })
                 with ex ->
@@ -73,12 +74,10 @@ module Tradier =
             member this.Receiver(msg, _) = receiver msg
             member this.Close _ = ()
 
-    type Client(tickers: Ticker list,
-                length: int,
-                buffer: Data.Buffer<DataPoint>,
-                token: string) =
+    type Client(tickers: Ticker list, length: int,
+                buffer: Data.Buffer<DataPoint>, token: string) =
 
-            let dataStore = Data.Map(tickers, length, buffer)
+            let dataStore = DataPoint.Map(tickers, length, buffer)
             let connection = new WebSocket.Connection(Config(dataStore, token))
 
             interface Client<DataPoint> with

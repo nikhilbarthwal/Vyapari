@@ -8,8 +8,8 @@ type Data<'T when 'T :> Data<'T>> = abstract member Price: decimal
 
 module Data =
 
-    type Array<'T when 'T :> Data<'T>>(length: int, f: unit -> 'T) =
-        let data = [| for _ in 1 .. length -> f() |]
+    type Array<'T when 'T :> Data<'T>>(length: int, init: unit -> 'T) =
+        let data = [| for _ in 1 .. length -> init() |]
         member inline internal this.Overwrite(get: int -> 'T) =
             for i in 0 .. length - 1 do data[i] <- get i
 
@@ -27,7 +27,6 @@ module Data =
 
     type Buffer<'T when 'T :> Data<'T>> =
         abstract member CreateQueue: Ticker * ('T -> unit) -> Buffer.Queue<'T>
-        abstract member Init: unit -> 'T
 
     type Input<'T when 'T :> Data<'T>> =
         abstract member Insert: 'T -> unit
@@ -47,12 +46,12 @@ module Data =
 
 
     type private RingBuffer<'T when 'T :> Data<'T>>
-            (ticker: Ticker, length, buffer: Buffer<'T>) =
+            (ticker: Ticker, length, buffer: Buffer<'T>, Init: unit -> 'T) =
         let mutable pos: int = 0
         let mutable count: int = 0
         let object = System.Object()
 
-        let data = [| for _ in 1 .. length -> buffer.Init() |]
+        let data = [| for _ in 1 .. length -> Init() |]
         let get i = let k = (length + pos - i - 1) % length in data[k]
 
         let queue: Buffer.Queue<'T> =
@@ -74,15 +73,13 @@ module Data =
         interface Input<'T> with member this.Insert(x: 'T) = this.Insert(x)
         interface Output<'T> with member this.Get(l) = this.Get(l)
 
-
-    type Map<'T when 'T :> Data<'T>>
-            (tickers: Ticker list, length: int, buffer: Buffer<'T>) =
-
+    type Map<'T when 'T :> Data<'T>>(tickers: Ticker list, length: int,
+                                     buffer: Buffer<'T>, init: unit -> 'T) =
         let dataMap: Generic.IReadOnlyDictionary<Ticker, RingBuffer<'T>> =
             let data = Concurrent.ConcurrentDictionary<Ticker, RingBuffer<'T>>()
-            for ticker in tickers do
-                let b = data.TryAdd(ticker, RingBuffer(ticker, length, buffer))
-                assert b
+            let ring ticker = RingBuffer(ticker, length, buffer, init)
+            for ticker in tickers do let b = data.TryAdd(ticker, ring ticker)
+                                     assert b
             data
 
         interface Source<'T> with
