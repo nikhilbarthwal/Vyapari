@@ -1,5 +1,6 @@
 namespace Vyapari
 
+open System
 open System.Collections.Generic
 open Vyapari
 
@@ -15,13 +16,14 @@ module LinearBuffer =
 
 
     module Bisect =
+
         let inline internal Decimal (r1: int) (r2: int)
-                                    (v1: decimal) (v2: decimal) =
-            (v1 * (decimal r1) + v2 * (decimal r2)) / (decimal <| r1 + r2)
+                                    (v1: decimal) (v2: decimal): Decimal =
+            let v: Decimal = v1 * (decimal r1) + v2 * (decimal r2)
+            Math.Round(v/(decimal <| r1 + r2), 3)
 
         let inline internal Long (r1: int) (r2: int) (v1: int64) (v2: int64) =
-            (v1 * (int64 r1) + v2 * (int64 r2)) / (int64 <| r1 + r2)
-
+            int64 <| (v1 * (int64 r1) + v2 * (int64 r2)) / (int64 <| r1 + r2)
 
     type private Bucket<'T when 'T :> Data<'T>>(config: Config<'T>) =
         let mutable data: 'T = config.Init()
@@ -61,7 +63,7 @@ module LinearBuffer =
 
         let insert (x: 'T): unit =
             if config.Verbosity <> Data.Buffer.Verbosity.Final then
-               Log.Info("LinearBuffer", $"Ticker = {ticker} -> Final Data = {x}")
+               Log.Info("Buffer", $"Ticker = {ticker} -> Final Data = {x}")
             output x
 
         let extrapolate (diff: int): unit =
@@ -80,7 +82,7 @@ module LinearBuffer =
         interface Data.Buffer.Queue<'T> with
             member this.Ingest(x: 'T): bool =
                 if config.Verbosity <> Data.Buffer.Verbosity.Final then
-                    Log.Info("LinearBuffer", $"Ticker = {ticker} -> Raw Data = {x}")
+                    Log.Info("Buffer", $"Ticker = {ticker} -> Raw Data = {x}")
 
                 let current = floor x.Time
                 if buckets[0].Count = 0 then // Initial case
