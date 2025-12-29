@@ -30,7 +30,7 @@ module Utils =
     let inline Wait (timeout: int) =
         assert (timeout > 0) ; Threading.Thread.Sleep(timeout * 1000)
 
-    let inline Diff (a: float, b: float) = Normalize(100.0 * (a - b) / b)
+    let inline Diff (a: decimal, b: decimal) = Math.Round(100.0m * (a - b) / b, 3)
 
     let inline CurrentTime() = DateTime.Now.ToString("F")
 
