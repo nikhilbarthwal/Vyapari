@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="SampleBot/SampleBot.fsproj" />
+  <Project Path="Vyapari.Tests/Vyapari.Tests.fsproj" />
+  <Project Path="Vyapari/Vyapari.fsproj" />
+</Solution>
