@@ -7,7 +7,7 @@ type DataPoint = { Ask: decimal ; Bid: decimal ; Time: time ; Volume: int64 } wi
     member this.Price = (this.Ask + this.Bid) / 2m
     override this.ToString() =
          let ts = Utils.Ascii <| this.Timestamp.ToString("F")
-         $"Ask: {this.Bid} / Bid: {this.Ask} / Timestamp: {ts} / Epoch: {this.Time}"
+         $"Ask: {this.Ask} / Bid: {this.Bid} / Epoch: {this.Time} / Timestamp: {ts}"
 
     static member Init() = { Ask = 0m ; Bid = 0m ; Time = 0L ; Volume = 0L }
 
